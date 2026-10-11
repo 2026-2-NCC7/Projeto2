@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ach.ai — Navegação na loja</title>
+<style>
+  :root{
+    --ink:#201E1A; --paper:#F6F5F0; --panel:#FFFFFF;
+    --line:#E3E0D6; --muted:#7A7568;
+    --brand:#4C3A9C; --brand-ink:#FFFFFF; --brand-soft:#ECE8FA;
+    --route:#E25A3E; --route-soft:#FDEAE4;
+    --promo:#C23A2E; --promo-soft:#FBE6E2;
+    --ok:#2B7A4B; --ok-soft:#E1F1E6;
+    --off:#A8443B; --off-soft:#F6E6E3;
+    --c-horti:#3F8F5B; --c-horti-soft:#E4F2E8;
+    --c-pad:#C98A2E;   --c-pad-soft:#F8EDDB;
+    --c-merc:#9C5B3C;  --c-merc-soft:#F3E6DC;
+    --c-beb:#1D7A8C;   --c-beb-soft:#DFEFF2;
+    --c-limp:#6B5B95;  --c-limp-soft:#E9E5F3;
+    --radius:16px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#EFEDE6; --paper:#17161A; --panel:#1F1E23;
+      --line:#34323A; --muted:#9A95A6; --brand-soft:#2A2440;
+      --route-soft:#3A271F; --promo-soft:#3A241F; --ok-soft:#1D2E23; --off-soft:#332422;
+      --c-horti-soft:#1E2E22; --c-pad-soft:#332C1B; --c-merc-soft:#2E2119; --c-beb-soft:#132A2F; --c-limp-soft:#241F38;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EFEDE6; --paper:#17161A; --panel:#1F1E23;
+    --line:#34323A; --muted:#9A95A6; --brand-soft:#2A2440;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:1040px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+  .tabular{font-variant-numeric:tabular-nums}
+
+  header.top{
+    position:sticky; top:0; z-index:5; background:var(--paper);
+    padding:calc(14px + env(safe-area-inset-top,0px)) 20px 12px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;letter-spacing:-.2px}
+  .brand .mark{width:20px;height:20px;border-radius:7px;background:var(--brand);display:grid;place-items:center;color:#fff;font-size:11px}
+  .steps{display:flex;gap:6px;margin-top:13px}
+  .step{flex:1;height:4px;border-radius:3px;background:var(--line);position:relative}
+  .step.on{background:var(--brand)}
+  .step-label{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--muted);font-weight:600}
+
+  main{flex:1;padding:24px 20px 44px}
+  .screen{display:none;animation:rise .28s ease}
+  .screen.active{display:block}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  h1{font-size:25px;margin:0 0 6px;letter-spacing:-.3px;font-weight:800}
+  p.lede{color:var(--muted);font-size:14.5px;line-height:1.55;margin:0 0 24px;max-width:50ch}
+
+  /* --- Tela 1: QR --- */
+  .qr-hero{
+    background:linear-gradient(165deg,var(--brand) 0%,#352a73 100%);
+    border-radius:22px;padding:36px 24px;text-align:center;max-width:400px;margin:6px auto 0;color:#fff;
+    box-shadow:0 18px 40px -18px rgba(76,58,156,.55);
+  }
+  .qr-box{
+    width:150px;height:150px;margin:0 auto 20px;border-radius:14px;background:#fff;position:relative;padding:12px;
+  }
+  .qr-box svg{width:100%;height:100%}
+  button.primary{
+    background:#fff;color:var(--brand);border:none;border-radius:12px;
+    padding:14px 20px;font-size:15px;font-weight:700;cursor:pointer;width:100%;
+  }
+  button.primary:disabled{opacity:.4;cursor:not-allowed}
+  button.ghost{
+    background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:12px;
+    padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:10px;
+  }
+  .hint{font-size:12.5px;color:rgba(255,255,255,.78);margin-top:16px;line-height:1.55}
+  .mode-note{
+    display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#fff;
+    background:rgba(255,255,255,.16);padding:6px 12px;border-radius:99px;margin-top:18px;font-weight:700;
+  }
+
+  /* --- Tela 2: Lista --- */
+  .search{
+    width:100%;padding:13px 16px;border-radius:13px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);font-size:15px;margin-bottom:18px;
+  }
+  .aisle-title{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ac);margin:20px 0 10px}
+  .aisle-title .sw{width:9px;height:9px;border-radius:3px;background:var(--ac)}
+  .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:11px}
+  .prod{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px;
+    display:flex;flex-direction:column;gap:9px;border-top:3px solid var(--ac);
+  }
+  .prod .name{font-size:13.5px;font-weight:700;line-height:1.3}
+  .prod .meta{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+  .price-tag{font-weight:800;color:var(--ink)}
+  .badge{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;padding:3px 7px;border-radius:99px}
+  .badge.partner{background:var(--brand-soft);color:var(--brand)}
+  .badge.promo{background:var(--promo-soft);color:var(--promo)}
+  .prod button{
+    border:1px solid var(--ac);background:transparent;color:var(--ac);
+    border-radius:9px;padding:8px 10px;font-size:12.5px;font-weight:700;cursor:pointer;
+  }
+  .prod.added button{background:var(--ac);color:#fff}
+  .prod.unavailable{opacity:.5}
+  .prod.unavailable button{border-color:var(--off);color:var(--off);background:var(--off-soft);cursor:not-allowed}
+
+  .cartbar{
+    position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--line);
+    padding:16px 20px calc(16px + env(safe-area-inset-bottom,0px));margin:26px -20px -44px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .cartbar .count{font-weight:800;font-size:14px}
+  .cartbar .sub{font-size:12px;color:var(--muted)}
+  .cartbar button{flex:1}
+
+  /* --- Tela 3: Rota --- */
+  .offers{
+    background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 20px 6px;margin-bottom:20px;
+    position:relative;
+  }
+  .offers::before{
+    content:"";position:absolute;top:0;left:18px;right:18px;height:0;
+    border-top:2px dashed var(--line);
+  }
+  .offers h2{font-size:13px;margin:0 0 3px;text-transform:uppercase;letter-spacing:.4px;font-weight:800;color:var(--muted)}
+  .offers .sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+  .offer-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .offer-row:last-child{border-bottom:none}
+  .offer-row .nm{flex:1;font-weight:600}
+  .offer-row .pr{font-weight:800;font-variant-numeric:tabular-nums}
+  .offer-empty{font-size:12.5px;color:var(--muted);padding:6px 0 14px}
+
+  .route-wrap{display:grid;grid-template-columns:1fr;gap:18px}
+  @media(min-width:760px){.route-wrap{grid-template-columns:1.35fr 1fr}}
+  .map-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px;overflow:hidden}
+  .map-card svg{width:100%;height:auto;display:block}
+  .list-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px}
+  .progress-bar{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-bottom:6px}
+  .progress-bar > i{display:block;height:100%;background:var(--ok);transition:width .3s}
+  .progress{font-size:12.5px;color:var(--muted);margin-bottom:14px;font-weight:600}
+
+  .stop{display:flex;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid var(--line)}
+  .stop:last-child{border-bottom:none}
+  .stop .n{
+    width:25px;height:25px;border-radius:50%;background:var(--route-soft);color:var(--route);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none;
+  }
+  .stop.done .n{background:var(--ok-soft);color:var(--ok)}
+  .stop .label{flex:1;font-size:14px;font-weight:600}
+  .stop .label small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .stop.done .label{color:var(--muted);text-decoration:line-through}
+  .stop .next-tag{font-size:10px;font-weight:800;color:var(--route);background:var(--route-soft);padding:4px 8px;border-radius:99px}
+  .check{width:23px;height:23px;border-radius:7px;border:1.6px solid var(--line);background:transparent;cursor:pointer;flex:none;color:#fff;font-size:13px}
+  .stop.done .check{background:var(--ok);border-color:var(--ok)}
+
+  .rec-card{
+    margin:4px 2px 12px;padding:12px 13px;border-radius:14px;background:var(--route-soft);
+    border:1px dashed var(--route);display:flex;align-items:center;gap:11px;
+  }
+  .rec-card .ic{font-size:20px;flex:none}
+  .rec-card .body{flex:1}
+  .rec-card .tag{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--route);letter-spacing:.3px}
+  .rec-card .nm{font-size:13.5px;font-weight:700;margin-top:1px}
+  .rec-card .pr{font-size:12px;color:var(--muted);margin-top:1px}
+  .rec-card button{
+    border:none;background:var(--route);color:#fff;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer;flex:none;
+  }
+
+  .done-card{display:none;text-align:center;padding:30px 16px;background:var(--ok-soft);border-radius:18px;margin-top:18px}
+  .done-card.show{display:block}
+  .done-card .big{font-size:32px}
+  .restart{margin-top:18px;max-width:260px;margin-left:auto;margin-right:auto}
+
+  footer.note{padding:4px 20px 34px;font-size:11.5px;color:var(--muted);line-height:1.6;max-width:62ch}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark">a</span> Ach.ai</div>
+    <div class="steps">
+      <div class="step on" id="st1"></div><div class="step" id="st2"></div><div class="step" id="st3"></div>
+    </div>
+    <div class="step-label"><span>QR Code</span><span>Lista</span><span>Rota</span></div>
+  </header>
+
+  <main>
+    <!-- TELA 1 -->
+    <section class="screen active" id="screen-qr">
+      <h1>Encontre tudo sem perder tempo</h1>
+      <p class="lede">Aponte a câmera para o QR Code do carrinho e monte sua rota até cada produto da lista.</p>
+      <div class="qr-hero">
+        <div class="qr-box">
+          <svg viewBox="0 0 100 100">
+            <rect width="100" height="100" fill="#fff"/>
+            <g fill="#201E1A">
+              <rect x="6" y="6" width="26" height="26" rx="3"/><rect x="12" y="12" width="14" height="14" rx="2" fill="#fff"/><rect x="16" y="16" width="6" height="6" fill="#201E1A"/>
+              <rect x="68" y="6" width="26" height="26" rx="3"/><rect x="74" y="12" width="14" height="14" rx="2" fill="#fff"/><rect x="78" y="16" width="6" height="6" fill="#201E1A"/>
+              <rect x="6" y="68" width="26" height="26" rx="3"/><rect x="12" y="74" width="14" height="14" rx="2" fill="#fff"/><rect x="16" y="78" width="6" height="6" fill="#201E1A"/>
+              <rect x="40" y="6" width="5" height="5"/><rect x="50" y="6" width="5" height="5"/><rect x="40" y="16" width="5" height="5"/><rect x="58" y="16" width="5" height="5"/>
+              <rect x="40" y="40" width="5" height="5"/><rect x="50" y="40" width="5" height="5"/><rect x="60" y="40" width="5" height="5"/><rect x="40" y="50" width="5" height="5"/>
+              <rect x="50" y="50" width="5" height="5"/><rect x="68" y="44" width="5" height="5"/><rect x="80" y="50" width="5" height="5"/><rect x="88" y="40" width="5" height="5"/>
+              <rect x="40" y="68" width="5" height="5"/><rect x="40" y="80" width="5" height="5"/><rect x="50" y="88" width="5" height="5"/><rect x="60" y="76" width="5" height="5"/>
+              <rect x="70" y="68" width="5" height="5"/><rect x="80" y="80" width="5" height="5"/><rect x="88" y="88" width="5" height="5"/><rect x="70" y="88" width="5" height="5"/>
+            </g>
+          </svg>
+        </div>
+        <button class="primary" onclick="goTo(2)">Simular leitura do QR Code</button>
+        <div class="hint">No carrinho real, o Web App abre direto no navegador ao ler o código — sem instalar nada.</div>
+        <div class="mode-note">● Modo visitante — sem necessidade de conta</div>
+      </div>
+    </section>
+
+    <!-- TELA 2 -->
+    <section class="screen" id="screen-list">
+      <h1>Monte sua lista</h1>
+      <p class="lede">Busque os produtos que você precisa. Preço só aparece em itens de promoção ou com parceria ativa na loja.</p>
+      <input class="search" id="search" placeholder="Buscar produto..." oninput="renderCatalog()">
+      <div id="catalog"></div>
+      <div class="cartbar">
+        <div>
+          <div class="count tabular" id="cartCount">0</div>
+          <div class="sub">itens na lista</div>
+        </div>
+        <button class="primary" id="routeBtn" disabled onclick="buildRoute()" style="background:var(--brand);color:#fff">Calcular rota</button>
+      </div>
+    </section>
+
+    <!-- TELA 3 -->
+    <section class="screen" id="screen-route">
+      <h1>Sua rota</h1>
+      <p class="lede">Caminho mais curto até cada item, com ofertas da loja destacadas ao longo do trajeto.</p>
+
+      <div class="offers">
+        <h2>Ofertas desta rota</h2>
+        <div class="sub">Preço exibido apenas para parcerias e promoções ativas no supermercado.</div>
+        <div id="offersList"></div>
+      </div>
+
+      <div class="route-wrap">
+        <div class="map-card"><svg id="map" viewBox="0 0 640 540"></svg></div>
+        <div class="list-card">
+          <div class="progress-bar"><i id="progFill" style="width:0%"></i></div>
+          <div class="progress" id="progress"></div>
+          <div id="stops"></div>
+        </div>
+      </div>
+      <div class="done-card" id="doneCard">
+        <div class="big">✅</div>
+        <strong>Compra concluída!</strong>
+        <p class="lede" style="margin:8px auto 0">Todos os itens da rota foram encontrados.</p>
+        <button class="ghost restart" onclick="restart()">Começar nova lista</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="note">Protótipo de demonstração: acesso por QR Code, montagem da lista, roteirização por heurística do caixeiro-viajante, recomendação de complementares por corredor e precificação restrita a itens patrocinados/em promoção (Seção 6.1 e 9.3 do TCC).</footer>
+</div>
+
+<script>
+const AISLES = {
+  "Hortifruti":{x:95,  color:"var(--c-horti)", soft:"var(--c-horti-soft)", icon:"🥦"},
+  "Padaria/Laticínios":{x:215, color:"var(--c-pad)",   soft:"var(--c-pad-soft)",   icon:"🥖"},
+  "Mercearia":{x:335, color:"var(--c-merc)",  soft:"var(--c-merc-soft)",  icon:"🛒"},
+  "Bebidas":{x:455,  color:"var(--c-beb)",   soft:"var(--c-beb-soft)",   icon:"🧃"},
+  "Limpeza":{x:565,  color:"var(--c-limp)",  soft:"var(--c-limp-soft)",  icon:"🧽"},
+};
+const ENTRADA={x:45,y:500,label:"Entrada"}, CHECKOUT={x:600,y:500,label:"Caixa"};
+
+const CATALOG = [
+ {id:1,name:"Banana",aisle:"Hortifruti",x:95,y:90},
+ {id:2,name:"Tomate",aisle:"Hortifruti",x:95,y:150},
+ {id:3,name:"Alface",aisle:"Hortifruti",x:95,y:210},
+ {id:4,name:"Maçã",aisle:"Hortifruti",x:95,y:270},
+ {id:5,name:"Pão Francês",aisle:"Padaria/Laticínios",x:215,y:90},
+ {id:6,name:"Queijo Mussarela",aisle:"Padaria/Laticínios",x:215,y:150},
+ {id:7,name:"Leite Integral",aisle:"Padaria/Laticínios",x:215,y:210,avail:false},
+ {id:8,name:"Iogurte Natural",aisle:"Padaria/Laticínios",x:215,y:270},
+ {id:9,name:"Arroz",aisle:"Mercearia",x:335,y:90},
+ {id:10,name:"Feijão",aisle:"Mercearia",x:335,y:150},
+ {id:11,name:"Macarrão",aisle:"Mercearia",x:335,y:210},
+ {id:12,name:"Café",aisle:"Mercearia",x:335,y:270},
+ {id:13,name:"Suco de Laranja",aisle:"Bebidas",x:455,y:90},
+ {id:14,name:"Refrigerante",aisle:"Bebidas",x:455,y:150,promo:5.49,was:7.99},
+ {id:15,name:"Água Mineral",aisle:"Bebidas",x:455,y:210,avail:false},
+ {id:16,name:"Detergente",aisle:"Limpeza",x:565,y:90,partner:4.99},
+ {id:17,name:"Sabão em Pó",aisle:"Limpeza",x:565,y:150},
+ {id:18,name:"Papel Higiênico",aisle:"Limpeza",x:565,y:210},
+ // itens de recomendação (complementares por corredor)
+ {id:19,name:"Molho de Tomate",aisle:"Mercearia",x:335,y:330,partner:8.90,rec:true,of:[11]},
+ {id:20,name:"Queijo Parmesão Ralado",aisle:"Padaria/Laticínios",x:215,y:330,promo:12.50,was:15.90,rec:true,of:[11]},
+ {id:21,name:"Manteiga com Sal",aisle:"Padaria/Laticínios",x:215,y:390,rec:true,of:[5]},
+ {id:22,name:"Leite Condensado",aisle:"Mercearia",x:335,y:390,partner:6.20,rec:true,of:[12]},
+ {id:23,name:"Aveia em Flocos",aisle:"Hortifruti",x:95,y:330,promo:9.40,was:11.20,rec:true,of:[1]},
+].map(p=>({avail:true, partner:null, promo:null, was:null, rec:false, of:[], ...p}));
+
+const byId = id => CATALOG.find(p=>p.id===id);
+let cart=[], route=[], found=[], addedRecs=[];
+
+function price(p){ return p.partner ?? p.promo ?? null; }
+function badge(p){ return p.partner!=null ? {t:"Parceria",cls:"partner"} : p.promo!=null ? {t:"Promoção",cls:"promo"} : null; }
+function money(v){ return "R$ " + v.toFixed(2).replace(".", ","); }
+
+function goTo(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(['','screen-qr','screen-list','screen-route'][n]).classList.add('active');
+  [1,2,3].forEach(i=>document.getElementById('st'+i).classList.toggle('on', i<=n));
+  if(n===2) renderCatalog();
+}
+
+function prodCardHTML(p){
+  const b = badge(p), pr = price(p);
+  return `<div class="prod ${cart.includes(p.id)?'added':''} ${!p.avail?'unavailable':''}" style="--ac:${AISLES[p.aisle].color}">
+    <div class="name">${p.name}</div>
+    <div class="meta">
+      ${pr!=null ? `<span class="price-tag tabular">${money(pr)}</span>` : `<span>${p.avail?'Sem oferta':'Fora de estoque'}</span>`}
+      ${b?`<span class="badge ${b.cls}">${b.t}</span>`:''}
+    </div>
+    <button ${!p.avail?'disabled':''} onclick="toggleItem(${p.id})">${cart.includes(p.id)?'Adicionado ✓':'Adicionar'}</button>
+  </div>`;
+}
+
+function renderCatalog(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const el = document.getElementById('catalog');
+  const byAisle = {};
+  CATALOG.filter(p=>!p.rec && p.name.toLowerCase().includes(q)).forEach(p=>(byAisle[p.aisle]=byAisle[p.aisle]||[]).push(p));
+  el.innerHTML = Object.keys(byAisle).map(a => `
+    <div class="aisle-title" style="--ac:${AISLES[a].color}"><span class="sw"></span>${AISLES[a].icon} ${a}</div>
+    <div class="prod-grid">${byAisle[a].map(prodCardHTML).join('')}</div>`).join('')
+    || '<p class="lede">Nenhum produto encontrado.</p>';
+}
+
+function toggleItem(id){
+  cart = cart.includes(id) ? cart.filter(x=>x!==id) : [...cart, id];
+  document.getElementById('cartCount').textContent = cart.length;
+  document.getElementById('routeBtn').disabled = cart.length===0;
+  renderCatalog();
+}
+
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+function activeRecs(){
+  // recomendações cujo corredor-gatilho está na rota e que ainda não foram adicionadas
+  const inCart = new Set([...cart, ...addedRecs]);
+  return CATALOG.filter(p=>p.rec && !inCart.has(p.id) && p.of.some(t=>cart.includes(t)||addedRecs.includes(t)));
+}
+
+function buildRoute(){
+  let remaining = CATALOG.filter(p=>cart.includes(p.id) || addedRecs.includes(p.id));
+  let current=ENTRADA, ordered=[];
+  while(remaining.length){
+    remaining.sort((a,b)=>dist(current,a)-dist(current,b));
+    const next=remaining.shift(); ordered.push(next); current=next;
+  }
+  route=ordered;
+  goTo(3);
+  renderAll();
+}
+
+function addRec(id){
+  addedRecs.push(id);
+  buildRoute();
+}
+
+function renderAll(){ renderOffers(); renderMap(); renderStops(); }
+
+function renderOffers(){
+  const items = route.filter(p=>price(p)!=null);
+  const el = document.getElementById('offersList');
+  el.innerHTML = items.length ? items.map(p=>{
+    const b=badge(p);
+    return `<div class="offer-row">
+      <span class="nm">${p.name} <span class="badge ${b.cls}" style="margin-left:6px">${b.t}</span></span>
+      ${p.was?`<span style="color:var(--muted);text-decoration:line-through;font-size:12px" class="tabular">${money(p.was)}</span>`:''}
+      <span class="pr tabular">${money(price(p))}</span>
+    </div>`;
+  }).join('') : '<div class="offer-empty">Nenhum item desta rota está em promoção ou com parceria no momento.</div>';
+}
+
+function pathD(pts){
+  if(pts.length<2) return '';
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for(let i=1;i<pts.length;i++){
+    const p0=pts[i-1], p1=pts[i];
+    const mx=(p0.x+p1.x)/2, my=(p0.y+p1.y)/2;
+    d += ` Q ${p0.x} ${my}, ${mx} ${my} T ${p1.x} ${p1.y}`;
+  }
+  return d;
+}
+
+function renderMap(){
+  const pts=[ENTRADA, ...route, CHECKOUT];
+  let svg = `<defs>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="var(--route)" flood-opacity=".28"/></filter>
+  </defs>
+  <rect x="0" y="0" width="640" height="540" fill="var(--panel)"/>`;
+
+  Object.entries(AISLES).forEach(([name,a])=>{
+    svg += `<rect x="${a.x-30}" y="55" width="60" height="400" rx="12" fill="${a.soft}" stroke="${a.color}" stroke-width="1" stroke-opacity=".5"/>`;
+    for(let y=75;y<445;y+=24) svg += `<line x1="${a.x-22}" y1="${y}" x2="${a.x+22}" y2="${y}" stroke="${a.color}" stroke-opacity=".22" stroke-width="2"/>`;
+    svg += `<text x="${a.x}" y="40" font-size="12" font-weight="700" fill="${a.color}" text-anchor="middle">${a.icon} ${name}</text>`;
+  });
+
+  svg += `<path d="${pathD(pts)}" fill="none" stroke="var(--route)" stroke-width="5" stroke-linecap="round" filter="url(#sh)" opacity=".92"/>`;
+
+  [ENTRADA,CHECKOUT].forEach(p=>{
+    svg += `<circle cx="${p.x}" cy="${p.y}" r="11" fill="var(--ink)"/>
+      <text x="${p.x}" y="${p.y+28}" font-size="11.5" font-weight="700" fill="var(--muted)" text-anchor="middle">${p.label}</text>`;
+  });
+
+  route.forEach((p,i)=>{
+    const d=found.includes(p.id);
+    svg += `<circle cx="${p.x}" cy="${p.y}" r="14" fill="${d?'var(--ok)':'var(--route)'}" stroke="#fff" stroke-width="2.5"/>
+      <text x="${p.x}" y="${p.y+4.5}" font-size="12" fill="#fff" text-anchor="middle" font-weight="800">${i+1}</text>`;
+  });
+
+  activeRecs().forEach(p=>{
+    svg += `<circle cx="${p.x}" cy="${p.y}" r="9" fill="var(--panel)" stroke="var(--route)" stroke-width="2.5" stroke-dasharray="3,3"/>
+      <text x="${p.x}" y="${p.y+4}" font-size="10" text-anchor="middle">✨</text>`;
+  });
+
+  document.getElementById('map').innerHTML = svg;
+}
+
+function renderStops(){
+  const el = document.getElementById('stops');
+  const nextIdx = route.findIndex(p=>!found.includes(p.id));
+  const recs = activeRecs();
+  let html='';
+  route.forEach((p,i)=>{
+    const b=badge(p), pr=price(p);
+    html += `<div class="stop ${found.includes(p.id)?'done':''}">
+      <div class="n">${i+1}</div>
+      <div class="label">${p.name}<small>${p.aisle}${pr!=null?` · ${money(pr)} ${b.t}`:''}</small></div>
+      ${i===nextIdx?'<span class="next-tag">próximo</span>':''}
+      <button class="check" onclick="toggleFound(${p.id})">${found.includes(p.id)?'✓':''}</button>
+    </div>`;
+    recs.filter(r=>r.of.includes(p.id)).forEach(r=>{
+      const rb=badge(r), rp=price(r);
+      html += `<div class="rec-card">
+        <div class="ic">✨</div>
+        <div class="body">
+          <div class="tag">Sugestão neste corredor</div>
+          <div class="nm">${r.name}</div>
+          <div class="pr">${rp!=null?`${money(rp)} · ${rb.t}`:'Combina com seu item'}</div>
+        </div>
+        <button onclick="addRec(${r.id})">Adicionar</button>
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+  const n=found.length, total=route.length;
+  document.getElementById('progFill').style.width = total? (100*n/total)+'%' : '0%';
+  document.getElementById('progress').textContent = `${n} de ${total} itens encontrados`;
+  document.getElementById('doneCard').classList.toggle('show', n===total && total>0);
+}
+
+function toggleFound(id){
+  found = found.includes(id) ? found.filter(x=>x!==id) : [...found, id];
+  renderMap(); renderStops();
+}
+
+function restart(){
+  cart=[]; route=[]; found=[]; addedRecs=[];
+  document.getElementById('cartCount').textContent=0;
+  document.getElementById('routeBtn').disabled=true;
+  goTo(1);
+}
+</script>
+</body>
+</html>
