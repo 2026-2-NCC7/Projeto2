@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ach.ai — navegação indoor e Retail Media para supermercados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F1F5F8;--surface:#fff;--ink:#0F2A36;--muted:#4C6572;--line:#D5E0E6;--route:#2456F0;--promo:#FFB020;--promo-ink:#3A2600;--shelf:#DCE6EC;
+--fh:"Bricolage Grotesque",system-ui,sans-serif;--fb:"Figtree",system-ui,sans-serif;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1B22;--surface:#14262F;--ink:#E8F0F4;--muted:#9FB3BE;--line:#26414E;--route:#7C9BFF;--shelf:#203A46}}
+:root[data-theme="dark"]{--bg:#0E1B22;--surface:#14262F;--ink:#E8F0F4;--muted:#9FB3BE;--line:#26414E;--route:#7C9BFF;--shelf:#203A46}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1.0625rem/1.6 var(--fb)}
+h1,h2,h3{font-family:var(--fh);line-height:1.08;margin:0;letter-spacing:-.02em}
+h1{font-size:3rem;font-weight:800}
+h2{font-size:2.1rem;font-weight:800;max-width:22ch}
+h3{font-size:1.25rem;font-weight:600}
+p{margin:0}
+a{color:inherit}
+a:focus-visible,summary:focus-visible{outline:3px solid var(--route);outline-offset:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;justify-content:space-between;padding-top:18px;padding-bottom:18px}
+.brand{font:800 1.4rem var(--fh);text-decoration:none}
+.brand span{color:var(--route)}
+nav{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.95rem}
+nav a{text-decoration:none;color:var(--muted)}
+nav a:hover{color:var(--ink)}
+.view-switch{position:sticky;top:0;z-index:10;background:var(--surface);border-block:1px solid var(--line)}
+.view-switch .wrap{display:flex;gap:8px;padding-top:8px;padding-bottom:8px}
+.view-tab{min-height:44px;padding:9px 16px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--muted);font:600 .95rem var(--fb);cursor:pointer}
+.view-tab[aria-selected="true"]{background:var(--ink);color:#fff}
+.view-tab:focus-visible{outline:3px solid var(--route);outline-offset:2px}
+section{padding:72px 0;border-top:1px solid var(--line)}
+.lead{color:var(--muted);max-width:56ch;margin-top:16px}
+.hero{display:grid;gap:36px;padding:40px 20px 64px;align-items:center}
+.hero p{color:var(--muted);margin-top:18px;max-width:46ch;font-size:1.15rem}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.btn{display:inline-block;padding:12px 20px;border-radius:10px;font-weight:600;text-decoration:none;border:2px solid var(--ink);font-family:var(--fb);font-size:1rem;cursor:pointer}
+.btn.main{background:var(--route);border-color:var(--route);color:#fff}
+.map{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px}
+.map svg{display:block;width:100%;height:auto}
+.wall{fill:var(--surface);stroke:var(--line);stroke-width:2}
+.shelf{fill:var(--shelf)}
+.lbl{fill:var(--muted);font:600 12px var(--fb);text-anchor:middle}
+.route{fill:none;stroke:var(--route);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:100;animation:draw 4.2s .4s ease-in-out forwards}
+.stop,.offer,.ring{opacity:0;animation:show .4s forwards}
+.stop circle{fill:var(--route)}
+.stop text{fill:#fff;font:700 13px var(--fb);text-anchor:middle}
+.ring{fill:none;stroke:var(--promo);stroke-width:4}
+.offer rect{fill:var(--promo)}
+.offer text{fill:var(--promo-ink);font:600 13px var(--fb);text-anchor:middle}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes show{to{opacity:1}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 4px 2px;padding:0;list-style:none;font-size:.95rem}
+.chips li{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:999px;padding:4px 14px 4px 5px}
+.chips b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--route);color:#fff;font-size:.8rem}
+.note{font-size:.85rem;color:var(--muted);margin:10px 4px 2px}
+.two{display:grid;gap:36px;margin-top:36px}
+.two h3{margin-bottom:8px}
+.two p{color:var(--muted)}
+.facts{display:grid;gap:22px;margin-top:44px;padding-top:28px;border-top:1px solid var(--line)}
+.facts strong{display:block;font:800 1.7rem/1.15 var(--fh)}
+.facts span{color:var(--muted);font-size:.95rem}
+.steps{list-style:none;counter-reset:s;padding:0;margin:36px 0 0;display:grid;gap:28px}
+.steps li{counter-increment:s;padding-left:58px;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-4px;font:800 2.6rem/1 var(--fh);color:var(--route)}
+.steps p{color:var(--muted);margin-top:4px}
+.flowline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-top:32px;border-block:1px solid var(--line)}
+.flowline div{display:flex;flex-direction:column;gap:4px;padding:18px 16px;border-right:1px solid var(--line)}
+.flowline div:last-child{border-right:0}
+.flowline b{font:800 1.05rem var(--fh);color:var(--route)}
+.flowline span{font-size:.92rem;color:var(--muted)}
+.back{margin-top:36px;padding:18px 22px;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--promo);border-radius:6px 14px 14px 6px}
+.cols{display:grid;gap:34px;margin-top:36px}
+.col{border-top:4px solid var(--route);padding-top:14px}
+.col:nth-child(2){border-color:var(--ink)}
+.col:nth-child(3){border-color:var(--promo)}
+.col ul,.list{margin:10px 0 0;padding-left:1.1em;color:var(--muted)}
+.col li,.list li{margin-bottom:6px}
+.dash{margin-top:52px}
+.dash dl{display:grid;gap:18px;margin:22px 0 0}
+.dash dt{font-weight:600}
+.dash dd{margin:2px 0 0;color:var(--muted)}
+.tam{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px;margin-top:36px}
+.sam{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0 0 clamp(0px,4vw,44px)}
+.som{background:var(--route);color:#fff;border-radius:8px;padding:18px;margin:16px 0 0 clamp(0px,4vw,44px)}
+.tam h3,.sam h3,.som h3{font-size:1.1rem}
+.tam p,.sam p{color:var(--muted);margin-top:4px}
+.som p{margin-top:4px;color:#fff}
+.small{font-size:.85rem;color:var(--muted);margin-top:12px}
+.rev{display:grid;gap:26px;margin-top:44px}
+.rev h3{font-size:1.1rem;margin-bottom:4px}
+.rev p{color:var(--muted)}
+.goals{margin:30px 0 0;padding:0;list-style:none;max-width:680px}
+.goals li{display:flex;gap:16px;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line)}
+.goals b{font:800 1.35rem var(--fh);color:var(--route);white-space:nowrap}
+.mvp{display:grid;gap:30px;margin-top:44px}
+.stack{margin-top:36px;color:var(--muted);max-width:70ch}
+.team p{margin-top:12px;color:var(--muted)}
+.names{display:flex;flex-wrap:wrap;gap:8px 28px;margin:22px 0 0;padding:0;list-style:none;font-weight:600}
+#demo-view{padding:18px 0 32px}
+.demo-heading{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:0 20px 12px;color:var(--muted);font-size:.9rem}
+.demo-frame{display:block;width:100%;height:calc(100svh - 155px);min-height:640px;border:1px solid var(--line);background:var(--bg)}
+#demo-view{scroll-margin-top:64px}
+.source-note a{color:var(--route)}
+footer{padding:28px 0 40px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+@media (min-width:860px){
+h1{font-size:3.6rem}
+h2{font-size:2.4rem}
+.hero{grid-template-columns:1fr 1.05fr}
+.two,.cols,.rev,.mvp{grid-template-columns:1fr 1fr}
+.cols,.rev{grid-template-columns:repeat(3,1fr)}
+.facts{grid-template-columns:repeat(3,1fr)}
+.steps,.dash dl{grid-template-columns:1fr 1fr;column-gap:48px}
+}
+@media (max-width:520px){
+h1{font-size:2.25rem}
+h2{font-size:1.7rem}
+.view-switch .wrap{gap:4px;padding-inline:12px}
+.view-tab{padding-inline:10px;font-size:.85rem}
+.demo-heading{display:grid;gap:3px}
+.flowline{grid-template-columns:1fr 1fr}
+.flowline div:nth-child(2){border-right:0}
+.flowline div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+}
+@media (prefers-reduced-motion:reduce){
+html{scroll-behavior:auto}
+.route{animation:none;stroke-dashoffset:0}
+.stop,.offer,.ring{animation:none;opacity:1}
+}
+</style>
+</head>
+<body>
+<header>
+ <div class="wrap">
+  <a class="brand" href="#pitch-view">Ach<span>.ai</span></a>
+  <nav aria-label="Seções">
+  <a href="#problema">Problema</a><a href="#diferencial">Diferencial</a><a href="#escopo">MVP</a><a href="#validacao">Validação</a><a href="#operacao">Operação</a><a href="#mercado">Viabilidade</a><a href="#equipe">Equipe</a>
+  </nav>
+ </div>
+</header>
+
+<div class="view-switch" role="tablist" aria-label="Visualização do projeto">
+ <div class="wrap">
+    <button class="view-tab" id="pitch-tab" role="tab" aria-selected="true" aria-controls="pitch-view">Proposta para o varejista</button>
+    <button class="view-tab" id="demo-tab" role="tab" aria-selected="false" aria-controls="demo-view">Experimentar a jornada</button>
+ </div>
+</div>
+
+<main id="pitch-view" role="tabpanel" aria-labelledby="pitch-tab">
+<div class="wrap hero">
+ <div>
+   <h1>Quando o cliente não encontra o produto, a loja também perde informação.</h1>
+  <p>O Ach.ai liga lista de compras, catálogo da filial e localização cadastrada para propor uma sequência de paradas no mapa. O piloto testará se clientes usam esse fluxo e se os registros de busca ajudam a loja a identificar falhas de localização ou disponibilidade.</p>
+  <div class="btns"><a class="btn main" href="#piloto">Conheça a proposta de piloto</a><a class="btn" href="#validacao">Como vamos validar</a></div>
+ </div>
+ <div class="map">
+   <svg viewBox="0 0 520 405" role="img" aria-label="Ilustração conceitual de uma loja com rota azul passando por quatro paradas">
+   <rect class="wall" x="10" y="10" width="500" height="385" rx="14"/>
+   <rect class="shelf" x="80" y="95" width="36" height="170" rx="4"/>
+   <rect class="shelf" x="170" y="95" width="36" height="170" rx="4"/>
+   <rect class="shelf" x="260" y="95" width="36" height="170" rx="4"/>
+   <rect class="shelf" x="350" y="95" width="36" height="170" rx="4"/>
+   <rect class="shelf" x="440" y="95" width="36" height="170" rx="4"/>
+   <text class="lbl" x="44" y="382">Entrada</text>
+   <text class="lbl" x="470" y="382">Caixas</text>
+   <path class="route" pathLength="100" d="M44 350 V295 H143 V75 H233 V295 H323 V75 H413 V295 H470 V350"/>
+   <g class="stop" style="animation-delay:1.1s"><circle cx="143" cy="230" r="13"/><text x="143" y="235">1</text></g>
+   <g class="stop" style="animation-delay:2.4s"><circle cx="233" cy="130" r="13"/><text x="233" y="135">2</text></g>
+   <g class="stop" style="animation-delay:3.2s"><circle cx="323" cy="200" r="13"/><text x="323" y="205">3</text></g>
+   <g class="stop" style="animation-delay:4.1s"><circle cx="413" cy="140" r="13"/><text x="413" y="145">4</text></g>
+   <circle class="ring" cx="233" cy="130" r="22" style="animation-delay:2.5s"/>
+  <g class="offer" style="animation-delay:2.6s"><rect x="90" y="24" width="340" height="34" rx="17"/><text x="260" y="46">Sugestão no corredor da rota: molho de tomate</text></g>
+  </svg>
+  <ul class="chips" aria-label="Lista de compras"><li><b>1</b>Arroz</li><li><b>2</b>Macarrão</li><li><b>3</b>Leite</li><li><b>4</b>Café</li></ul>
+   <p class="note">Ilustração conceitual; a demonstração interativa usa um mapa de loja de exemplo.</p>
+ </div>
+</div>
+
+<section id="problema"><div class="wrap">
+ <h2>O caixa registra a venda; nem sempre registra o que impediu a compra.</h2>
+ <p class="lead">Sem vínculo entre catálogo e posição física, uma busca malsucedida pode ser ruptura, item fora do mix ou localização desatualizada. Para o cliente, isso pode significar procura e interrupções; para a loja, dúvidas recorrentes, correções manuais e demanda difícil de interpretar.</p>
+ <div class="two">
+  <div><h3>Pressão operacional</h3><p>Quando a posição não é confiável, clientes podem pedir orientação e a equipe pode deixar a reposição para ajudar. Mudanças de gôndola também exigem atualizar o cadastro. O piloto levantará frequência e esforço com a loja, em vez de presumir uma economia.</p></div>
+  <div><h3>Ponto cego comercial</h3><p>Uma busca sem resultado não explica por si só se faltou estoque, se o item não faz parte do mix ou se a localização está errada. O caixa mostra a venda concluída, mas não necessariamente a procura que a antecedeu.</p></div>
+ </div>
+</div></section>
+
+<section id="diferencial"><div class="wrap">
+ <h2>O diferencial do Ach.ai é conectar a jornada ao cadastro da loja</h2>
+ <p class="lead">A proposta une lista de compras, SKU do catálogo, localização física e eventos de busca num fluxo que o varejista pode observar. Isso complementa o dado do caixa com sinais sobre procura e localização; não substitui o ERP nem comprova a causa de uma venda.</p>
+ <div class="flowline" aria-label="Fluxo de dados proposto">
+  <div><b>Lista</b><span>o que o cliente procura</span></div><div><b>Catálogo</b><span>qual produto e disponibilidade</span></div><div><b>Localização</b><span>em qual nó/gôndola foi cadastrado</span></div><div><b>Evento</b><span>busca, parada e reporte informados</span></div>
+ </div>
+</div></section>
+
+<section id="escopo"><div class="wrap">
+ <h2>Escopo proposto do MVP</h2>
+ <p class="lead">Validar o fluxo em uma filial, com acesso via QR e sem exigir aplicativo. O primeiro cadastro pode ser feito manualmente ou importado, conforme a estrutura de dados disponível.</p>
+ <div class="mvp">
+  <div><h3>Primeira entrega prevista</h3><ul class="list"><li>QR Code identifica a filial e abre o Web App em modo visitante.</li><li>Busca no catálogo e montagem de lista de compras.</li><li>Mapa 2D e sequência aproximada entre entrada, produtos localizados e checkout, com grafo validado da filial.</li><li>Marcação de itens coletados e reporte de produto não encontrado.</li><li>Importação/manual inicial de catálogo, localização e disponibilidade.</li><li>Registro de sessões, buscas, rotas e reportes para acompanhar uso e qualidade do cadastro.</li></ul></div>
+  <div><h3>Escopo por fases e dependências</h3><ul class="list"><li><b>Posicionamento:</b> o QR define a filial; chegada ao corredor é informada na interface. Localização contínua exigiria instrumentação à parte.</li><li><b>Integração:</b> sincronização com ERP/PDV depende de API, dados, autorização e testes do parceiro; importação é a alternativa inicial.</li><li><b>Expansão:</b> aplicativo nativo, multi-loja e gestão automatizada de Retail Media são etapas posteriores.</li><li><b>Medição:</b> venda atribuída depende de correspondência confiável com o PDV; incremento exige comparação desenhada para esse fim.</li></ul></div>
+ </div>
+ <p class="back"><b>IA e algoritmo:</b> o núcleo proposto é pesquisa operacional: grafo de corredores e heurísticas para ordenar paradas no TSP; o resultado é aproximado, não matematicamente ótimo. O protótipo interativo atual usa vizinho mais próximo e distância euclidiana entre coordenadas didáticas. Ele ainda não executa o roteamento sobre o grafo real da loja nem utiliza machine learning. Recomendações baseadas em regras podem ser avaliadas depois com dados reais.</p>
+ <p class="small"><b>Arquitetura conceitual proposta:</b> Web App/PWA mobile-first em React + Tailwind CSS, API REST e PostgreSQL/PostGIS para catálogo, filial e grafo. Essas escolhas vêm do TCC; a stack de produção ainda será construída e testada no piloto.</p>
+</div></section>
+
+<section id="como"><div class="wrap">
+ <h2>Jornada prevista para o cliente</h2>
+ <ol class="steps">
+  <li><h3>Escaneia o QR do carrinho</h3><p>O navegador abre o Web App na filial correta, sem instalação ou cadastro obrigatório.</p></li>
+  <li><h3>Busca e confirma os itens</h3><p>Produtos indisponíveis não entram na rota; itens sem localização podem permanecer na lista, mas ficam fora do cálculo.</p></li>
+  <li><h3>Segue uma sequência de paradas</h3><p>A heurística proposta considera os caminhos do grafo entre entrada, produtos mapeados e checkout. O cliente marca o que encontrou ou reporta uma localização incorreta.</p></li>
+ </ol>
+ <p class="note">A demonstração usa coordenadas ilustrativas. Para o piloto, é necessário cadastrar e percorrer o grafo da filial, validar acessos e associar produtos às posições reais.</p>
+</div></section>
+
+<section id="demo-cta"><div class="wrap">
+ <h2>Demonstração interativa</h2>
+ <p class="lead">Explore o fluxo conceitual de QR, lista e mapa. A oferta contextual é um experimento complementar; a demo não representa posicionamento indoor nem rota de produção.</p>
+ <div class="btns"><button class="btn main" type="button" data-show-demo>Ver demonstração</button></div>
+</div></section>
+
+<section id="dados"><div class="wrap">
+ <h2>Dados gerados e interpretação</h2>
+ <div class="two">
+  <div><h3>Uso observado no Web App</h3><p>Sessões iniciadas pelo QR, buscas, disponibilidade conforme cadastro, rotas calculadas, itens marcados, reportes de “não encontrei” e conclusão da tarefa. Impressões, cliques e adições só entram se a funcionalidade de oferta estiver habilitada.</p></div>
+  <div><h3>Resultados que pedem outra evidência</h3><p>Marcar um item não confirma que foi coletado; uma rota calculada não é um trajeto físico observado. Clique ou adição não equivale a venda. Atribuição exige correspondência autorizada e confiável com ERP/PDV; efeito incremental exige grupo ou período comparável.</p></div>
+ </div>
+ <p class="back"><b>Leitura operacional:</b> busca frustrada é um sinal para investigar falta de estoque, mix ou localização; não identifica a causa automaticamente. Rotas do Web App não são heatmap de circulação da loja.</p>
+</div></section>
+
+<section id="piloto"><div class="wrap">
+ <h2 id="validacao">Como o piloto será validado</h2>
+ <p class="lead">Uma filial e uma ou poucas categorias. Antes de iniciar, equipe e supermercado definem responsáveis, período, dados autorizados e critérios de sucesso ou interrupção.</p>
+ <ol class="steps">
+  <li><h3>Estabelecer a linha de base</h3><p>Documentar como a loja lida com dúvidas de localização e indisponibilidade e quais dados já registra.</p></li>
+  <li><h3>Preparar o mapa e catálogo</h3><p>Importar/cadastrar produtos e posições, percorrer o grafo e validar entrada, checkout e caminhos.</p></li>
+  <li><h3>Observar adoção e busca</h3><p>Acompanhar sessões, rotas concluídas, buscas sem resultado, reportes e feedback voluntário.</p></li>
+  <li><h3>Avaliar ofertas separadamente</h3><p>Medir impressões, cliques e adições; comparar com vendas apenas quando houver chave de ligação e método aprovados.</p></li>
+  <li><h3>Decidir com a loja</h3><p>Revisar qualidade dos dados, esforço de atualização e critérios acordados; continuar, ajustar ou encerrar.</p></li>
+ </ol>
+ <p class="stack"><b>Critérios técnicos do TCC:</b> carregamento inicial abaixo de 3 s (RNF20) e cálculo para até 50 itens em até 2 s (RNF28). São metas a testar, não resultados medidos. O piloto não parte de um ROI presumido.</p>
+</div></section>
+
+<section id="operacao"><div class="wrap">
+ <h2>Dependências e responsabilidades</h2>
+ <div class="cols">
+  <div class="col"><h3>Dados sob responsabilidade da loja</h3><ul><li>Fornecer planta, catálogo com identificadores estáveis e posição dos produtos.</li><li>Definir responsável e rotina para atualizar layout, mix e disponibilidade.</li><li>Validar caminhos, entrada, checkout e reportes recebidos.</li></ul></div>
+  <div class="col"><h3>Trabalho do projeto no piloto</h3><ul><li>Preparar o mapa/grafo e testar rotas de referência com a equipe da loja.</li><li>Implementar o fluxo acordado e organizar eventos de uso e reportes.</li><li>Registrar tempo de implantação, suporte e correção de dados para estimar a operação.</li></ul></div>
+  <div class="col"><h3>Integração e custo de manutenção</h3><ul><li>ERP/PDV exige acesso, documentação, autorização e correspondência entre produto, filial e período.</li><li>Sem API, começar por importação manual/CSV, sem sincronização em tempo real.</li><li>Estimar horas para mapa, SKU/localização e disponibilidade, além de hospedagem, suporte e conector, se contratado.</li></ul></div>
+ </div>
+ <p class="small">LGPD, finalidade, minimização, retenção e controle de acesso devem ser acordados antes de usar dados reais.</p>
+</div></section>
+
+<section id="mercado"><div class="wrap">
+ <h2>Viabilidade comercial a avaliar</h2>
+ <p class="lead">O TCC considera implantação por filial, assinatura SaaS e Retail Media como possibilidades. Preço, margem, anunciantes e custo de atualização ainda precisam ser definidos com o parceiro.</p>
+ <div class="rev">
+  <div><h3>Benefício a investigar</h3><p>Adoção, qualidade da localização, buscas recorrentes e esforço operacional associado.</p></div>
+  <div><h3>Custo a contabilizar</h3><p>Mapeamento inicial, manutenção do catálogo e mapa, suporte, hospedagem e integração.</p></div>
+  <div><h3>Receita complementar</h3><p>Campanhas patrocinadas apenas com anunciante, identificação de conteúdo e mensuração acordada.</p></div>
+ </div>
+ <p class="back"><b>Decisão de investimento:</b> calcular ROI somente após acordar baseline, custos completos e método de comparação. Correlação entre interação e venda não demonstra causalidade.</p>
+</div></section>
+
+<section id="equipe" class="team"><div class="wrap">
+ <h2>Equipe e contribuição acadêmica</h2>
+ <p>Trabalho de conclusão de curso de Ciência da Computação, Centro Universitário FECAP, São Paulo, 2026. A contribuição proposta é modelar a jornada de compra numa filial como um problema de localização e ordenação de paradas, e avaliar o fluxo com dados operacionais observáveis.</p>
+ <ul class="names"><li>Ettore Tarsis Angelo Marigo Grecco</li><li>Leonardo Ferreira da Silva</li><li>Luis Felipe Torelli Sparrapan</li><li>Rafaella Morelli Ezequiel</li></ul>
+ <p>Orientador: Prof. Leonardo Lugoboni</p>
+</div></section>
+</main>
+
+<section id="demo-view" role="tabpanel" aria-labelledby="demo-tab" hidden>
+ <div class="demo-heading"><span>Demonstração conceitual: QR Code, lista e rota. A recomendação contextual é um experimento complementar, fora do escopo-base do MVP.</span><span>Sem posição indoor em tempo real.</span></div>
+ <iframe class="demo-frame" title="Protótipo Ach.ai: navegação de compras no supermercado" src="Ach.ai%20%E2%80%94%20Web%20App%20(prot%C3%B3tipo)%20(1).html" loading="lazy"></iframe>
+</section>
+
+<footer><div class="wrap"><p>Ach.ai, projeto acadêmico de Ciência da Computação, FECAP (2026). Valores e impacto comercial estão em validação; não são garantias de desempenho.</p><p class="source-note small">Referências de UX e mensuração: <a href="https://www.nngroup.com/articles/mobile-ux/" target="_blank" rel="noreferrer">Nielsen Norman Group, Mobile UX</a>; <a href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html" target="_blank" rel="noreferrer">WCAG 2.2, tamanho mínimo dos alvos</a>; <a href="https://iabeurope.eu/knowledge_hub/iab-europes-retail-media-measurement-standards-for-europe/" target="_blank" rel="noreferrer">IAB Europe, padrões de mensuração Retail Media</a>.</p></div></footer>
+<script>
+const viewTabs = [...document.querySelectorAll('.view-tab')];
+const pitchView = document.getElementById('pitch-view');
+const demoView = document.getElementById('demo-view');
+function showView(showDemo){
+ pitchView.hidden = showDemo;
+ demoView.hidden = !showDemo;
+ viewTabs.forEach((tab,index)=>tab.setAttribute('aria-selected',String(index===(showDemo?1:0))));
+ if(showDemo) demoView.scrollIntoView({block:'start'});
+ else window.scrollTo({top:0,behavior:'smooth'});
+}
+viewTabs.forEach((tab,index)=>tab.addEventListener('click',()=>showView(index===1)));
+document.querySelector('[data-show-demo]').addEventListener('click',()=>showView(true));
+document.querySelectorAll('header nav a').forEach(link=>link.addEventListener('click',()=>{
+ if(!demoView.hidden) showView(false);
+}));
+</script>
+</body>
+</html>
