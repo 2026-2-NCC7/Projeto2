@@ -5,11 +5,14 @@
   "description": "API and database migrations for the Ach.ai development environment",
   "main": "src/server.js",
   "scripts": {
-    "start": "node migrate.js && node src/server.js",
-    "migrate": "node migrate.js",
+    "start": "node scripts/migrate.js && node src/server.js",
+    "migrate": "node scripts/migrate.js",
+    "create-admin": "node scripts/create-admin.js",
     "test": "node --test"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.13.1"
   }
 }

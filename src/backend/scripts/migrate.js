@@ -2,7 +2,7 @@ const { readdir, readFile } = require("node:fs/promises");
 const path = require("node:path");
 const { Pool } = require("pg");
 
-const migrationsDirectory = path.join(__dirname, "migrations");
+const migrationsDirectory = path.join(__dirname, "..", "migrations");
 const migrationFilePattern = /^\d{3,}_[a-z0-9_-]+\.sql$/i;
 const transientConnectionErrors = new Set([
   "ECONNREFUSED",
