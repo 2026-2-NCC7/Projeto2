@@ -1,0 +1,112 @@
+# Ach.ai - Ambiente Local de Desenvolvimento
+# docker-compose up -d
+
+version: '3.9'
+
+services:
+  # PostgreSQL + PostGIS
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: achai-postgres
+    environment:
+      POSTGRES_USER: achai
+      POSTGRES_PASSWORD: dev_password_change_me
+      POSTGRES_DB: achai_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U achai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Cache)
+  redis:
+    image: redis:7-alpine
+    container_name: achai-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # API REST (Node.js)
+  api:
+    build:
+      context: ../../src/backend
+      dockerfile: Dockerfile
+    container_name: achai-api
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://achai:dev_password_change_me@postgres:5432/achai_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_secret_change_me
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../../src/backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # Web App (React + Vite)
+  webapp:
+    build:
+      context: ../../src/frontend
+      dockerfile: Dockerfile.dev
+    container_name: achai-webapp
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../../src/frontend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # Worker IA (Python)
+  worker:
+    build:
+      context: ../../src/worker
+      dockerfile: Dockerfile
+    container_name: achai-worker
+    environment:
+      DATABASE_URL: postgresql://achai:dev_password_change_me@postgres:5432/achai_dev
+      REDIS_URL: redis://redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../../src/worker:/app
+
+  # Adminer (Database UI)
+  adminer:
+    image: adminer:latest
+    container_name: achai-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: achai-network
