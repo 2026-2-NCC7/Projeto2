@@ -1,0 +1,15 @@
+{
+  "name": "achai-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API and database migrations for the Ach.ai development environment",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node migrate.js && node src/server.js",
+    "migrate": "node migrate.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

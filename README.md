@@ -103,6 +103,20 @@ npm test
 Coloque código do prompt de comnando se for necessário
 ```
 
+### Ambiente local com Docker
+
+É necessário ter o Docker instalado com o plugin Docker Compose. Na raiz do repositório, execute:
+
+```sh
+docker compose up --build --wait
+```
+
+Esse comando inicia o PostgreSQL 16 com PostGIS e a API em `http://localhost:3000`. A API aplica as migrations pendentes antes de iniciar; o endpoint `http://localhost:3000/health` só fica saudável quando a API consegue consultar o banco. Se uma migration falhar, a API encerra com o nome da migration e o erro, e não fica saudável.
+
+As migrations ficam em `src/backend/migrations/` e são aplicadas uma única vez, em ordem, com registro na tabela `schema_migrations`. Para interromper os serviços, execute `docker compose down`. Os dados do banco permanecem no volume `postgres_data`; para removê-los e recriar o banco do zero, use `docker compose down -v`.
+
+As credenciais e portas padrão são destinadas somente ao desenvolvimento. Podem ser alteradas com as variáveis `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` e `API_PORT` no ambiente ou em um arquivo `.env` local.
+
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.
 
