@@ -145,9 +145,11 @@ Com os serviços em execução, crie um administrador pelo terminal interativo; 
 docker compose exec api npm run create-admin -- admin@example.com
 ```
 
-Faça login enviando `POST /auth/login` com `Content-Type: application/json` e o corpo `{"email":"admin@example.com","password":"..."}`. Credenciais válidas retornam `token`, `token_type` (`Bearer`) e `expires_in` (segundos). Credenciais inválidas retornam HTTP 401. O JWT é assinado com `JWT_SECRET` e expira em uma hora.
+Faça login enviando `POST /auth/login` com `Content-Type: application/json` e o corpo `{"email":"admin@example.com","password":"..."}`. Credenciais válidas retornam `token`, `token_type` (`Bearer`) e `expires_in` (segundos). O JWT também contém o papel do usuário em `role`: `admin` para o Administrador master ou `manager` para um Gerente. Credenciais inválidas retornam HTTP 401. O JWT é assinado com `JWT_SECRET` e expira em uma hora.
 
 O cadastro também está disponível em `POST /auth/register`. Envie `name`, `email`, `password` e `password_confirmation`; o endpoint retorna HTTP 201 quando a conta é criada e HTTP 409 quando o e-mail já está cadastrado. A página React de registro pode ser acessada pelo botão `Criar administrador` ou diretamente em `http://localhost:5173/#register`.
+
+Operações administrativas de criação de usuários usam `POST /admin/register` e exigem `Authorization: Bearer <token>` de um Administrador. Essa rota cria Gerentes (`role: manager`); tokens de Gerente recebem HTTP 403. O endpoint `/auth/register` continua reservado ao bootstrap inicial de Administradores.
 
 O frontend fica separado em `src/frontend` e usa React + Vite. Em um terminal, execute:
 

@@ -1,6 +1,6 @@
 async function findActiveAdmin(pool, email) {
   const { rows } = await pool.query(
-    `SELECT id, email, password_hash
+    `SELECT id, email, password_hash, role
      FROM admin_user
      WHERE lower(email) = lower($1) AND active = TRUE`,
     [email],
@@ -8,13 +8,13 @@ async function findActiveAdmin(pool, email) {
   return rows[0] || null;
 }
 
-async function insertAdmin(pool, email, passwordHash, displayName = "Administrador") {
+async function insertAdmin(pool, email, passwordHash, displayName = "Administrador", role = "admin") {
   const { rows } = await pool.query(
-    `INSERT INTO admin_user (email, password_hash, display_name)
-     VALUES ($1, $2, $3)
+    `INSERT INTO admin_user (email, password_hash, display_name, role)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT DO NOTHING
      RETURNING id, email`,
-    [email, passwordHash, displayName],
+    [email, passwordHash, displayName, role],
   );
   return rows[0] || null;
 }

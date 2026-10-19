@@ -118,7 +118,7 @@ test("authenticates administrators and rejects invalid credentials", async () =>
       assert.match(sql, /lower\(email\) = lower\(\$1\)/);
       assert.equal(values[0], "admin@example.com");
       return {
-        rows: [{ id: "admin-id", email: "admin@example.com", password_hash: passwordHash }],
+        rows: [{ id: "admin-id", email: "admin@example.com", password_hash: passwordHash, role: "admin" }],
       };
     },
   };
@@ -132,7 +132,7 @@ test("returns a signed bearer token after successful login", async () => {
   const pool = {
     async query() {
       return {
-        rows: [{ id: "admin-id", email: "admin@example.com", password_hash: passwordHash }],
+        rows: [{ id: "admin-id", email: "admin@example.com", password_hash: passwordHash, role: "admin" }],
       };
     },
   };
@@ -165,7 +165,7 @@ test("returns the same 401 response for unknown administrators and wrong passwor
     async query(sql, values) {
       return values[0] === "unknown@example.com"
         ? { rows: [] }
-        : { rows: [{ id: "admin-id", email: "admin@example.com", password_hash: passwordHash }] };
+        : { rows: [{ id: "admin-id", email: "admin@example.com", password_hash: passwordHash, role: "admin" }] };
     },
   };
 
@@ -240,4 +240,89 @@ test("returns 503 when administrator lookup fails", async () => {
   } finally {
     console.error = originalConsoleError;
   }
+});
+
+test("includes the persisted role in login tokens", async () => {
+  const passwordHash = await bcrypt.hash(password, 4);
+  const pool = {
+    async query() {
+      return {
+        rows: [{ id: "manager-id", email: "manager@example.com", password_hash: passwordHash, role: "manager" }],
+      };
+    },
+  };
+
+  await withServer(pool, jwtSecret, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "manager@example.com", password }),
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(jwt.verify(body.token, jwtSecret).role, "manager");
+  });
+});
+
+test("allows administrators and denies managers on administrative registration", async () => {
+  const adminToken = jwt.sign(
+    { role: "admin" },
+    jwtSecret,
+    { issuer: "achai-api", subject: "admin-id", expiresIn: 60 },
+  );
+  const managerToken = jwt.sign(
+    { role: "manager" },
+    jwtSecret,
+    { issuer: "achai-api", subject: "manager-id", expiresIn: 60 },
+  );
+  const pool = {
+    async query(sql, values) {
+      if (sql.includes("INSERT INTO admin_user")) {
+        assert.equal(values[3], "manager");
+        return { rows: [{ id: "manager-id", email: values[0] }] };
+      }
+      throw new Error("Unexpected query");
+    },
+  };
+
+  await withServer(pool, jwtSecret, async (baseUrl) => {
+    const payload = {
+      name: "Gerente da Loja",
+      email: "manager@example.com",
+      password,
+      password_confirmation: password,
+    };
+    const allowed = await fetch(`${baseUrl}/admin/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const denied = await fetch(`${baseUrl}/admin/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${managerToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    assert.equal(allowed.status, 201);
+    assert.equal(denied.status, 403);
+  });
+});
+
+test("requires a valid bearer token for administrative registration", async () => {
+  await withServer({ async query() { throw new Error("Database should not be queried."); } }, jwtSecret, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/admin/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    assert.equal(response.status, 401);
+  });
 });

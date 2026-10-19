@@ -5,6 +5,7 @@ const {
   isValidPassword,
   TOKEN_TTL_SECONDS,
   registerAdmin,
+  registerUser,
 } = require("../services/auth-service");
 const { readJsonBody, sendJson } = require("../utils/http");
 
@@ -54,7 +55,16 @@ async function register(request, response, context) {
       sendJson(response, 400, { error: "Passwords do not match." }, context.frontendOrigin);
       return;
     }
-    const admin = await registerAdmin(context.pool, payload.name, payload.email, payload.password);
+    const register = context.registrationRole === "manager"
+      ? registerUser
+      : registerAdmin;
+    const admin = await register(
+      context.pool,
+      payload.name,
+      payload.email,
+      payload.password,
+      context.registrationRole,
+    );
     if (!admin) {
       sendJson(response, 409, { error: "An administrator with this email already exists." }, context.frontendOrigin);
       return;

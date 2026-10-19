@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 
 const TOKEN_TTL_SECONDS = 60 * 60;
 const PASSWORD_HASH_ROUNDS = 12;
+const SUPPORTED_ROLES = new Set(["admin", "manager"]);
 const dummyPasswordHash = bcrypt.hashSync("not-a-real-admin-password", PASSWORD_HASH_ROUNDS);
 
 function normalizeEmail(email) {
@@ -34,8 +35,11 @@ async function compareWithDummyHash(password) {
 }
 
 function createAccessToken(admin, secret) {
+  if (!SUPPORTED_ROLES.has(admin.role)) {
+    throw new TypeError("User role is invalid.");
+  }
   return jwt.sign(
-    { role: "admin" },
+    { role: admin.role },
     secret,
     { expiresIn: TOKEN_TTL_SECONDS, issuer: "achai-api", subject: admin.id },
   );
@@ -50,4 +54,5 @@ module.exports = {
   isValidPassword,
   normalizeEmail,
   TOKEN_TTL_SECONDS,
+  SUPPORTED_ROLES,
 };
