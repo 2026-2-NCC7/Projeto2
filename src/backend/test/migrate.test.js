@@ -3,7 +3,7 @@ const { mkdtemp, rm, writeFile } = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
-const { connectWithRetry, runMigrations } = require("../migrate");
+const { connectWithRetry, runMigrations } = require("../scripts/migrate");
 
 async function createMigrations(files) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "achai-migrations-"));

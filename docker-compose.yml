@@ -26,6 +26,8 @@ services:
       PGUSER: ${POSTGRES_USER:-achai}
       PGPASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_me}
       PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
     ports:
       - "${API_PORT:-3000}:3000"
     depends_on:

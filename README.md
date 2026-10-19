@@ -10,13 +10,13 @@ Vide tutoriais do PI.
 <a href= "https://www.fecap.br/"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhZPrRa89Kma0ZZogxm0pi-tCn_TLKeHGVxywp-LXAFGR3B1DPouAJYHgKZGV0XTEf4AE&usqp=CAU" alt="FECAP - Fundação de Comércio Álvares Penteado" border="0"></a>
 </p>
 
-# Nome do Projeto
+# Ach.ai
 
-## Nome do Grupo
+## Ach.ai
 
-## Integrantes: <a href="https://www.linkedin.com/in/victorbarq/">Goku Sayajin</a>, <a href="https://www.linkedin.com/in/victorbarq/">Saitama One</a>, <a href="https://www.linkedin.com/in/victorbarq/">Ikki de Fenix</a>, <a href="https://www.linkedin.com/in/victorbarq/">Yusuke Urameshi</a>, <a href="https://www.linkedin.com/in/victorbarq/">Roronoa Zoro</a>
+## Integrantes: <a href="https://www.linkedin.com/in/ettore-grecco/">Ettore Grecco</a>, <a href="https://www.linkedin.com/in/leoonaardoferreira/">Leonardo Ferreira</a>, <a href="https://www.linkedin.com/in/luis-felipe-torelli-sparrapan-05b54b2b5/">Luis Felipe Torelli Sparrapan</a>, <a href="https://www.linkedin.com/in/rafaella-morelli-075539240">Rafaella Morelli</a>
 
-## Professores Orientadores: <a href="https://www.linkedin.com/in/victorbarq/">Dr. Victor Von Doom</a>, <a href="https://www.linkedin.com/in/victorbarq/">Me. Saitama</a>, <a href="https://www.linkedin.com/in/victorbarq/">Dr. Strange</a>, <a href="https://www.linkedin.com/in/victorbarq/">Me. Yoda</a>, <a href="https://www.linkedin.com/in/victorbarq/">Dr. Gero</a>
+## Professores Orientadores: <a href="https://www.linkedin.com/in/leonardo-fabris-lugoboni-a3369416/">Dr. Leonardo Fabris Lugoboni</a>
 
 ## Descrição
 
@@ -97,6 +97,20 @@ Para abrir este projeto você necessita das seguintes ferramentas:
 
 -<a href="https://godotengine.org/download">GODOT</a>
 
+### Organização do backend
+
+O backend segue uma organização em camadas dentro de `src/backend`:
+
+- `app.js`: composição da aplicação HTTP e middlewares.
+- `router.js`: encaminhamento das requisições para as rotas.
+- `src/routes`: definição dos recursos HTTP.
+- `src/controllers`: tratamento de entrada e resposta HTTP.
+- `src/services`: regras de negócio, como autenticação e emissão de tokens.
+- `src/model`: acesso às entidades persistidas no PostgreSQL.
+- `src/middlewares`: preocupações transversais, como CORS.
+- `src/utils`: helpers de autenticação, validação e transporte HTTP.
+- `src/server.js`: ponto de entrada do processo.
+
 ```sh
 make install
 npm test
@@ -116,6 +130,36 @@ Esse comando inicia o PostgreSQL 16 com PostGIS e a API em `http://localhost:300
 As migrations ficam em `src/backend/migrations/` e são aplicadas uma única vez, em ordem, com registro na tabela `schema_migrations`. Para interromper os serviços, execute `docker compose down`. Os dados do banco permanecem no volume `postgres_data`; para removê-los e recriar o banco do zero, use `docker compose down -v`.
 
 As credenciais e portas padrão são destinadas somente ao desenvolvimento. Podem ser alteradas com as variáveis `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` e `API_PORT` no ambiente ou em um arquivo `.env` local.
+
+### Login administrativo
+
+Configure `JWT_SECRET` com pelo menos 32 bytes aleatórios em seu arquivo `.env` (não o compartilhe nem o versione). Gere um valor com:
+
+```sh
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"
+```
+
+Com os serviços em execução, crie um administrador pelo terminal interativo; a senha (mínimo de 12 caracteres) não é exibida nem armazenada em texto puro:
+
+```sh
+docker compose exec api npm run create-admin -- admin@example.com
+```
+
+Faça login enviando `POST /auth/login` com `Content-Type: application/json` e o corpo `{"email":"admin@example.com","password":"..."}`. Credenciais válidas retornam `token`, `token_type` (`Bearer`) e `expires_in` (segundos). Credenciais inválidas retornam HTTP 401. O JWT é assinado com `JWT_SECRET` e expira em uma hora.
+
+O cadastro também está disponível em `POST /auth/register`. Envie `name`, `email`, `password` e `password_confirmation`; o endpoint retorna HTTP 201 quando a conta é criada e HTTP 409 quando o e-mail já está cadastrado. A página React de registro pode ser acessada pelo botão `Criar administrador` ou diretamente em `http://localhost:5173/#register`.
+
+O frontend fica separado em `src/frontend` e usa React + Vite. Em um terminal, execute:
+
+```sh
+cd src/frontend
+npm install
+npm run dev
+```
+
+Abra `http://localhost:5173`. O Vite encaminha `/auth` e `/health` para a API em `http://localhost:3000`. A tela apresenta os estados de validação local, carregamento, erro de credenciais e sucesso; o token recebido fica apenas na `sessionStorage` do navegador até a aba ser encerrada.
+
+Em outro ambiente, configure `VITE_API_URL` no frontend e `FRONTEND_ORIGIN` na API para a origem pública do frontend.
 
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.
