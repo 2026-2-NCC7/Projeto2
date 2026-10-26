@@ -1,17 +1,23 @@
 const http = require("node:http");
-const { applyCors } = require("./middlewares/cors");
+const { applyCors, getAllowedOrigin } = require("./middlewares/cors");
 const { route } = require("./router");
 
 function createApp({
   pool,
   jwtSecret = process.env.JWT_SECRET,
-  frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+  frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:8081",
 }) {
-  const context = { pool, jwtSecret, frontendOrigin };
+  const allowedOrigins = frontendOrigin
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   return http.createServer((request, response) => {
-    applyCors(response, frontendOrigin);
+    const requestOrigin = getAllowedOrigin(request.headers.origin, allowedOrigins);
+    const context = { pool, jwtSecret, frontendOrigin: requestOrigin };
+    applyCors(response, requestOrigin);
     if (request.method === "OPTIONS") {
-      response.writeHead(204);
+      response.writeHead(requestOrigin || request.headers.origin ? 204 : 403);
       response.end();
       return;
     }

@@ -161,7 +161,39 @@ npm run dev
 
 Abra `http://localhost:5173`. O Vite encaminha `/auth` e `/health` para a API em `http://localhost:3000`. A tela apresenta os estados de validação local, carregamento, erro de credenciais e sucesso; o token recebido fica apenas na `sessionStorage` do navegador até a aba ser encerrada.
 
-Em outro ambiente, configure `VITE_API_URL` no frontend e `FRONTEND_ORIGIN` na API para a origem pública do frontend.
+Em outro ambiente, configure `VITE_API_URL` no frontend e `FRONTEND_ORIGIN` na API para as origens permitidas, separadas por vírgula. Por padrão, a API aceita o frontend Vite (`http://localhost:5173`) e o Expo Web (`http://localhost:8081`).
+
+### Aplicativo mobile
+
+O aplicativo instalável fica em `src/mobile` e é uma aplicação React Native com Expo. A estrutura separa:
+
+- `App.jsx`: composição da aplicação e navegação.
+- `src/screens`: telas nativas, começando por `LoginScreen`.
+- `src/components`: componentes visuais reutilizáveis.
+- `src/context`: estado de sessão e autenticação.
+- `src/services`: comunicação com a API REST.
+- `src/storage`: persistência segura no dispositivo com `expo-secure-store`.
+- `src/config`: configuração de ambiente e endereço da API.
+
+A estilização usa NativeWind, a integração mobile do Tailwind CSS. O app nativo é independente do Web App em `src/frontend`, mas compartilha a API do backend em `src/backend`, como definido na seção 6.3.6 do documento do projeto.
+
+Para testar o app nativo:
+
+```sh
+# Terminal 1: API
+cd src/backend
+set JWT_SECRET=chave-local-com-pelo-menos-32-caracteres
+npm start
+
+# Terminal 2: Expo
+cd src/mobile
+npm install
+npm start
+```
+
+Depois, pressione `a` para abrir no emulador Android, `i` para abrir no simulador iOS ou escaneie o QR Code com o Expo Go. No Android Emulator, a API local é acessada por `10.0.2.2`; em dispositivo físico, use `EXPO_PUBLIC_API_URL=http://<IP-DA-MAQUINA>:3000 npm start`.
+
+Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API e armazena o JWT no armazenamento seguro do dispositivo.
 
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.

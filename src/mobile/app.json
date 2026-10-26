@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Ach.ai",
+    "slug": "achai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "achai",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "br.com.achai.app"
+    },
+    "android": {
+      "package": "br.com.achai.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
+  }
+}
