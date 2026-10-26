@@ -1,0 +1,512 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rubik:wght@700&display=swap');
+
+.login-supermercado {
+  display: grid;
+  grid-template-columns: 568px 1fr;
+  min-height: 100vh;
+  width: 100%;
+  background: #ffffff;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ===== Apresentação do Portal ===== */
+.apresentacao-portal {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 56px;
+  background: #fbf7f2;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.marca-portal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.marca-portal .brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.marca-portal .brand-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #191919;
+  border-radius: 10px;
+  font-family: 'Rubik', sans-serif;
+  font-weight: 700;
+  font-size: 23px;
+  color: #191919;
+}
+
+.marca-portal .brand-name {
+  font-family: 'Rubik', sans-serif;
+  font-weight: 700;
+  font-size: 34px;
+  color: #191919;
+}
+
+.selo-parceiros {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  color: #72716e;
+  letter-spacing: 0.05em;
+}
+
+/* ===== Proposta para o Parceiro ===== */
+.proposta-parceiro {
+  display: flex;
+  flex-direction: column;
+  gap: 27px;
+  width: 100%;
+}
+
+.selo-portal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff1e5;
+  border-radius: 100px;
+  width: fit-content;
+}
+
+.selo-portal img {
+  width: 15px;
+  height: 15px;
+}
+
+.selo-portal span {
+  font-weight: 600;
+  font-size: 12px;
+  color: #a94700;
+}
+
+.titulo-proposta {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 46px;
+  line-height: 1.13;
+  color: #191919;
+  max-width: 100%;
+}
+
+.descricao-proposta {
+  margin: 0;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #72716e;
+  max-width: 398px;
+}
+
+/* ===== Ilustração do Supermercado ===== */
+.ilustracao-supermercado {
+  position: relative;
+  width: 420px;
+  height: 210px;
+  margin-top: 8px;
+}
+
+.base-supermercado {
+  position: absolute;
+  left: 16px;
+  top: 190px;
+  width: 378px;
+  height: 1px;
+  background: #e0d7cb;
+}
+
+.fachada-supermercado {
+  position: absolute;
+  left: 53px;
+  top: 69px;
+  width: 254px;
+  height: 121px;
+  background: #ffffff;
+  border: 1px solid #d6cbbf;
+  border-radius: 0 0 8px 8px;
+}
+
+.letreiro-supermercado {
+  position: absolute;
+  left: 53px;
+  top: 29px;
+  width: 254px;
+  height: 44px;
+  background: #191919;
+  border-radius: 10px 10px 0 0;
+}
+
+.porta-supermercado {
+  position: absolute;
+  left: 219px;
+  top: 116px;
+  width: 65px;
+  height: 74px;
+  background: #fbf7f2;
+  border: 1px solid #ddccbd;
+  border-radius: 6px 6px 0 0;
+}
+
+.puxador-porta {
+  position: absolute;
+  left: 229px;
+  top: 151px;
+  width: 3px;
+  height: 13px;
+  background: #191919;
+  border-radius: 2px;
+}
+
+.vitrine-supermercado {
+  position: absolute;
+  left: 72px;
+  top: 118px;
+  width: 126px;
+  height: 50px;
+  background: #fff1e5;
+  border: 1px solid #ddccbd;
+  border-radius: 5px;
+}
+
+.toldo {
+  position: absolute;
+  width: 31.75px;
+  height: 27px;
+  top: 73px;
+  border-radius: 0 0 10px 10px;
+}
+
+.toldo-1 { left: 53px; background: #f26900; }
+.toldo-2 { left: 84.75px; background: #ffd5b4; }
+.toldo-3 { left: 116.5px; background: #f26900; }
+.toldo-4 { left: 148.25px; background: #ffd5b4; }
+.toldo-5 { left: 180px; background: #f26900; }
+.toldo-6 { left: 211.75px; background: #ffd5b4; }
+.toldo-7 { left: 243.5px; background: #f26900; }
+.toldo-8 { left: 275.25px; background: #ffd5b4; }
+
+.logo-letreiro {
+  position: absolute;
+  left: 137px;
+  top: 37px;
+  font-family: 'Rubik', sans-serif;
+  font-weight: 700;
+  font-size: 23px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.detalhe-grafico {
+  position: absolute;
+  left: 352px;
+  top: 45px;
+  width: 12px;
+  height: 12px;
+}
+
+.destaque-crescimento {
+  position: absolute;
+  left: 280px;
+  top: 108px;
+  width: 94px;
+  height: 94px;
+}
+
+.icone-crescimento {
+  position: absolute;
+  left: 309px;
+  top: 136px;
+  width: 37px;
+  height: 37px;
+}
+
+.rodape-marca {
+  margin: 0;
+  font-weight: 400;
+  font-size: 12px;
+  color: #72716e;
+}
+
+/* ===== Área de Acesso ===== */
+.area-acesso {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px 64px 32px;
+  min-height: 100vh;
+}
+
+.cabecalho-acesso {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.label-acesso {
+  margin: 0;
+  font-weight: 400;
+  font-size: 12px;
+  color: #72716e;
+  letter-spacing: 0.05em;
+}
+
+.link-ajuda {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #72716e;
+  transition: color 0.2s;
+}
+
+.link-ajuda:hover {
+  color: #191919;
+}
+
+.link-ajuda img {
+  width: 16px;
+  height: 16px;
+}
+
+/* ===== Conteúdo do Formulário ===== */
+.conteudo-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  width: 472px;
+  margin: 0 auto;
+}
+
+.boas-vindas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.boas-vindas h2 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.2;
+  color: #191919;
+}
+
+.boas-vindas p {
+  margin: 0;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #72716e;
+}
+
+.formulario-supermercado {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.campo-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.campo-formulario label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #191919;
+}
+
+.entrada-campo {
+  display: flex;
+  align-items: center;
+  background: #fffaf6;
+  border: 1px solid #e8e5e1;
+  border-radius: 17px;
+  padding: 0 17px;
+  height: 52px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.entrada-campo:focus-within {
+  border-color: #f26900;
+  box-shadow: 0 0 0 3px rgba(242, 105, 0, 0.1);
+}
+
+.entrada-campo input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #191919;
+}
+
+.entrada-campo input::placeholder {
+  color: #72716e;
+}
+
+.entrada-senha {
+  justify-content: space-between;
+  padding-right: 10px;
+}
+
+.botao-toggle-senha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.botao-toggle-senha:hover {
+  opacity: 1;
+}
+
+.botao-toggle-senha img {
+  width: 18px;
+  height: 18px;
+}
+
+.link-esqueci-senha {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: #191919;
+  text-decoration: underline;
+  text-align: left;
+  transition: color 0.2s;
+}
+
+.link-esqueci-senha:hover {
+  color: #f26900;
+}
+
+.botao-entrar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  height: 56px;
+  background: #f26900;
+  border: none;
+  border-radius: 17px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: #191919;
+  transition: background-color 0.2s;
+}
+
+.botao-entrar:hover:not(:disabled) {
+  background: #d95f00;
+}
+
+.botao-entrar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.botao-entrar img {
+  width: 20px;
+  height: 20px;
+}
+
+.acesso-cadastro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+}
+
+.acesso-cadastro span {
+  font-weight: 400;
+  font-size: 13px;
+  color: #72716e;
+}
+
+.link-cadastro {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: #191919;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.link-cadastro:hover {
+  color: #f26900;
+}
+
+.acesso-cadastro img {
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== Rodapé de Acesso ===== */
+.rodape-acesso {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font-weight: 400;
+  font-size: 11px;
+  color: #72716e;
+}
+
+.rodape-acesso p {
+  margin: 0;
+}
+
+/* ===== Responsividade ===== */
+@media (max-width: 1200px) {
+  .login-supermercado {
+    grid-template-columns: 1fr;
+  }
+
+  .apresentacao-portal {
+    display: none;
+  }
+
+  .area-acesso {
+    padding: 32px 24px;
+  }
+
+  .conteudo-formulario {
+    width: 100%;
+    max-width: 472px;
+  }
+}
