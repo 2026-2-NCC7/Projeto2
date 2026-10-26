@@ -4,7 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import { fetchCatalog } from "../services/catalog-api";
 import { addListItem, createShoppingList } from "../services/shopping-list-api";
 
-const DEFAULT_STORE_ID = "00000000-0000-0000-0000-000000000001";
 const categories = [
   ["Hortifruti", "🥕"],
   ["Laticínios", "🥛"],
@@ -50,7 +49,7 @@ function ProductCard({ product, quantity, onChangeQuantity }) {
 }
 
 export function CreateListScreen({ navigation }) {
-  const { auth } = useAuth();
+  const { auth, currentStore } = useAuth();
   const [listName, setListName] = useState("Compra da semana");
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
@@ -62,7 +61,11 @@ export function CreateListScreen({ navigation }) {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchCatalog(auth?.token, DEFAULT_STORE_ID)
+    if (!currentStore?.id) {
+      setLoading(false);
+      return;
+    }
+    fetchCatalog(auth?.token, currentStore.id)
       .then((items) => {
         if (active) setProducts(items.map((product, index) => ({ ...product, icon: icons[index % icons.length] })));
       })
@@ -75,7 +78,7 @@ export function CreateListScreen({ navigation }) {
     return () => {
       active = false;
     };
-  }, [auth?.token]);
+  }, [auth?.token, currentStore?.id]);
 
   const visibleProducts = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
@@ -106,9 +109,17 @@ export function CreateListScreen({ navigation }) {
 
   const saveList = async () => {
     if (saving) return;
+    if (!currentStore?.id) {
+      Alert.alert("Escaneie a loja primeiro", "Leia o QR Code da loja antes de criar uma lista.");
+      return;
+    }
+    if (itemCount === 0) {
+      Alert.alert("Lista vazia", "Adicione pelo menos um produto à lista.");
+      return;
+    }
     setSaving(true);
     try {
-      const { list } = await createShoppingList(auth?.token, DEFAULT_STORE_ID, listName);
+      const { list } = await createShoppingList(auth?.token, currentStore.id, listName);
       for (const product of selectedProducts) {
         await addListItem(auth?.token, list.id, product.id, quantities[product.id]);
       }
@@ -150,7 +161,9 @@ export function CreateListScreen({ navigation }) {
             <Text className="mr-2 text-lg">🏪</Text>
             <View className="flex-1">
               <Text className="font-sans text-[8px] text-[#777]">Supermercado selecionado</Text>
-              <Text className="font-inter-semibold text-[10px] text-ink">Mercado Aurora</Text>
+              <Text className="font-inter-semibold text-[10px] text-ink">
+                {currentStore?.name || "Nenhuma loja selecionada"}
+              </Text>
             </View>
           </View>
 

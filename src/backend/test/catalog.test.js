@@ -79,3 +79,24 @@ test("isola os produtos pelo storeId", async () => {
     assert.equal((await responseB.json()).products[0].name, "Produto da loja B");
   });
 });
+
+test("valida a loja do QR Code antes de iniciar o catálogo", async () => {
+  const pool = {
+    async query(sql, values) {
+      assert.match(sql, /FROM filial/);
+      return values[0] === storeA
+        ? { rows: [{ id: storeA, name: "Mercado Aurora" }] }
+        : { rows: [] };
+    },
+  };
+
+  await withServer(pool, async (baseUrl) => {
+    const headers = { Authorization: "Bearer " + token };
+    const valid = await fetch(`${baseUrl}/stores/${storeA}`, { headers });
+    const invalid = await fetch(`${baseUrl}/stores/${storeB}`, { headers });
+
+    assert.equal(valid.status, 200);
+    assert.deepEqual((await valid.json()).store, { id: storeA, name: "Mercado Aurora" });
+    assert.equal(invalid.status, 404);
+  });
+});

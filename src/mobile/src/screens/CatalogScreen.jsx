@@ -58,6 +58,7 @@ function CatalogState({ kind, onRetry }) {
   const states = {
     offline: ["Sem conexão", "Verifique sua internet e tente novamente.", "Tentar novamente"],
     error: ["Não foi possível carregar", "O catálogo não respondeu agora.", "Tentar novamente"],
+    noStore: ["Escaneie a loja primeiro", "Leia o QR Code da loja para carregar o catálogo.", "Abrir leitor"],
     empty: ["Nenhum produto encontrado", "Tente outro nome, marca ou categoria.", null],
   };
   const [title, description, action] = states[kind];
@@ -75,7 +76,7 @@ function CatalogState({ kind, onRetry }) {
 }
 
 export function CatalogScreen({ navigation }) {
-  const { auth } = useAuth();
+  const { auth, currentStore } = useAuth();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todos");
   const [products, setProducts] = useState([]);
@@ -90,7 +91,12 @@ export function CatalogScreen({ navigation }) {
     const timer = setTimeout(() => {
       setLoading(true);
       setErrorKind(null);
-      fetchCatalog(auth?.token, undefined, search, controller.signal)
+      if (!currentStore?.id) {
+        setErrorKind("noStore");
+        setLoading(false);
+        return;
+      }
+      fetchCatalog(auth?.token, currentStore.id, search, controller.signal)
       .then((items) => {
         if (active) setProducts(items);
       })
@@ -108,7 +114,7 @@ export function CatalogScreen({ navigation }) {
       controller.abort();
       clearTimeout(timer);
     };
-  }, [auth?.token, search, retryKey]);
+  }, [auth?.token, currentStore?.id, search, retryKey]);
 
   const filteredProducts = useMemo(
     () => (category === "Todos" ? products : products.filter((product) => product.category === category)),
@@ -151,7 +157,9 @@ export function CatalogScreen({ navigation }) {
       />
 
       <Text className="font-inter-semibold mt-7 text-[19px] text-achai">Produtos da loja</Text>
-      <Text className="font-sans mt-1 text-[11px] text-[#555]">Catálogo inicial do MVP</Text>
+      <Text className="font-sans mt-1 text-[11px] text-[#555]">
+        {currentStore?.name || "Nenhuma loja selecionada"}
+      </Text>
     </View>
   );
 
@@ -168,7 +176,10 @@ export function CatalogScreen({ navigation }) {
             </View>
           ) : errorKind ? (
             <View className="px-5">
-              <CatalogState kind={errorKind} onRetry={() => setRetryKey((key) => key + 1)} />
+              <CatalogState
+                kind={errorKind}
+                onRetry={() => errorKind === "noStore" ? navigation.navigate("QrScanner") : setRetryKey((key) => key + 1)}
+              />
             </View>
           ) : (
             <View className="px-5">

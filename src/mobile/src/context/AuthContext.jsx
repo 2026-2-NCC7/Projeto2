@@ -1,11 +1,17 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { loginRequest } from "../services/auth-api";
 import { saveAuth } from "../storage/auth-storage";
+import { loadCurrentStore, saveCurrentStore } from "../storage/store-storage";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(null);
+  const [currentStore, setCurrentStoreState] = useState(null);
+
+  useEffect(() => {
+    loadCurrentStore().then(setCurrentStoreState).catch(() => setCurrentStoreState(null));
+  }, []);
 
   const signIn = useCallback(async (email, password) => {
     const result = await loginRequest(email, password);
@@ -14,7 +20,21 @@ export function AuthProvider({ children }) {
     return result;
   }, []);
 
-  const value = useMemo(() => ({ auth, signIn }), [auth, signIn]);
+  const setCurrentStore = useCallback(async (store) => {
+    await saveCurrentStore(store);
+    setCurrentStoreState(store);
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      auth,
+      currentStore,
+      currentStoreId: currentStore?.id || null,
+      setCurrentStore,
+      signIn,
+    }),
+    [auth, currentStore, setCurrentStore, signIn],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

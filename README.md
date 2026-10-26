@@ -199,6 +199,8 @@ Para criar um administrador de teste, execute `docker compose exec api npm run c
 
 As listas de compras são persistidas pela migration `008_shopping_lists.sql`. O mobile cria uma lista com `POST /stores/{storeId}/lists`, adiciona itens com `POST /lists/{listId}/items`, altera quantidades com `PATCH /lists/{listId}/items/{productId}`, remove itens com `DELETE /lists/{listId}/items/{productId}` e consulta o resumo com `GET /lists/{listId}`. A API valida o proprietário da lista, mantém todos os itens na mesma filial, bloqueia produtos fora de estoque e sinaliza no resumo quando algum produto não possui localização para a rota.
 
+O QR Code da loja pode conter o UUID da filial diretamente, um JSON com `storeId`/`filialId` ou uma URL com esses parâmetros ou com o caminho `/stores/{storeId}`. O mobile valida o identificador com `GET /stores/{storeId}` antes de persistir `currentStoreId` no armazenamento seguro. Depois da validação, catálogo, sugestões e criação de listas usam a loja atual; sem uma loja selecionada, o usuário é direcionado ao leitor de QR Code.
+
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.
 

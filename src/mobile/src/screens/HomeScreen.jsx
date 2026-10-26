@@ -112,13 +112,13 @@ function SuggestionCard({ suggestion }) {
 }
 
 export function HomeScreen({ navigation }) {
-  const { auth } = useAuth();
+  const { auth, currentStore } = useAuth();
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
 
   useEffect(() => {
     let active = true;
-    fetchSuggestions(auth?.token)
+    fetchSuggestions(auth?.token, currentStore?.id)
       .then((items) => {
         if (active) setSuggestions(items);
       })
@@ -131,7 +131,7 @@ export function HomeScreen({ navigation }) {
     return () => {
       active = false;
     };
-  }, [auth?.token]);
+  }, [auth?.token, currentStore?.id]);
 
   return (
     <View className="flex-1 bg-white">

@@ -10,6 +10,8 @@ O projeto é o Ach.ai, uma plataforma de navegação indoor para supermercados. 
 
 O trabalho atual concluiu a Fase 3 — Lista de compras.
 
+A Fase 4 — QR Code está em implementação nesta continuação: leitura real com `CameraView`, validação do payload, validação da loja no backend e persistência de `currentStoreId`.
+
 ## Stack
 
 ### Mobile
@@ -168,6 +170,30 @@ O resumo inclui:
 - `locationWarning`.
 
 Produtos fora de estoque são rejeitados com `409`. Produtos sem `no_id`, `corredor` e `prateleira` podem ser adicionados, mas ativam o alerta de que ficarão fora da rota.
+
+### Fase 4 — QR Code
+
+Arquivos relevantes:
+
+- `src/mobile/src/screens/QrScannerScreen.jsx`;
+- `src/mobile/src/utils/store-qr.js`;
+- `src/mobile/src/services/store-api.js`;
+- `src/mobile/src/storage/store-storage.js`;
+- `src/mobile/src/context/AuthContext.jsx`;
+- `src/backend/src/router.js`.
+
+Implementado:
+
+- leitura de QR Code real com `CameraView`;
+- filtro para códigos QR;
+- payload aceito como UUID, JSON ou URL;
+- validação do formato do UUID;
+- validação da filial no backend via `GET /stores/{storeId}`;
+- persistência segura do objeto da loja e do identificador em `currentStoreId`;
+- catálogo, sugestões e criação de listas vinculados à loja atual;
+- tela de catálogo orientando o usuário a escanear antes de buscar.
+
+O payload inválido ou pertencente a uma loja inexistente não é persistido. O identificador da loja demo com UUID não convencional é aceito porque a validação usa o formato estrutural de UUID, não a versão RFC.
 
 ## Estado do mobile na Fase 3
 

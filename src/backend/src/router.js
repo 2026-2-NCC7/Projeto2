@@ -62,6 +62,23 @@ async function route(request, response, context) {
     return;
   }
   const storeProductsMatch = pathname.match(/^\/stores\/([^/]+)\/products$/);
+  const storeMatch = pathname.match(/^\/stores\/([^/]+)$/);
+  if (storeMatch) {
+    if (request.method !== "GET") {
+      response.setHeader("Allow", "GET");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+    const store = await findStore(context.pool, decodeURIComponent(storeMatch[1]));
+    if (!store) {
+      sendJson(response, 404, { error: "Loja não encontrada." }, context.frontendOrigin);
+      return;
+    }
+    sendJson(response, 200, { store }, context.frontendOrigin);
+    return;
+  }
   if (storeProductsMatch) {
     if (request.method !== "GET") {
       response.setHeader("Allow", "GET");

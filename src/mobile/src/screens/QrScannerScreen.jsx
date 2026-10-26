@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../context/AuthContext";
+import { validateStore } from "../services/store-api";
+import { parseStoreQrPayload } from "../utils/store-qr";
 
 function ScanCorners() {
   return (
@@ -22,12 +25,35 @@ export function QrScannerScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [torchEnabled, setTorchEnabled] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const [scanning, setScanning] = useState(true);
+  const { auth, setCurrentStore } = useAuth();
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
       requestPermission();
     }
   }, [permission, requestPermission]);
+
+  const handleBarcodeScanned = async ({ data }) => {
+    if (!scanning) return;
+    setScanning(false);
+    setScanError("");
+    const parsed = parseStoreQrPayload(data);
+    if (!parsed.storeId) {
+      setScanError(parsed.error);
+      setScanning(true);
+      return;
+    }
+    try {
+      const store = await validateStore(auth?.token, parsed.storeId);
+      await setCurrentStore(store);
+      navigation.navigate("Home");
+    } catch (error) {
+      setScanError(error.message);
+      setScanning(true);
+    }
+  };
 
   if (!permission) {
     return (
@@ -62,7 +88,13 @@ export function QrScannerScreen({ navigation }) {
 
   return (
     <View className="flex-1 bg-black">
-      <CameraView className="absolute inset-0" facing="back" enableTorch={torchEnabled} />
+      <CameraView
+        className="absolute inset-0"
+        facing="back"
+        enableTorch={torchEnabled}
+        barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+        onBarcodeScanned={scanning ? handleBarcodeScanned : undefined}
+      />
       <View className="absolute inset-0 bg-black/35" />
 
       <View className="flex-1" style={{ paddingTop: insets.top }}>
@@ -79,6 +111,11 @@ export function QrScannerScreen({ navigation }) {
           <Text className="font-sans mt-8 text-center text-sm text-white">
             Aponte a câmera para o QR Code da loja
           </Text>
+          {scanError ? (
+            <Text className="mt-4 max-w-[280px] text-center font-sans text-xs text-[#ffb199]">
+              {scanError}
+            </Text>
+          ) : null}
         </View>
 
         <View className="items-center pb-8" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
