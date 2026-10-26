@@ -32,10 +32,19 @@ async function findProducts(pool, filialId, query, limit) {
        p.id,
        p.nome AS name,
        p.marca AS brand,
+       p.tamanho AS size,
        p.categoria AS category,
        p.preco AS price,
        p.estoque > 0 AS "inStock",
-       CASE WHEN p.no_id IS NULL THEN NULL ELSE jsonb_build_object('nodeId', p.no_id) END AS location
+       CASE
+         WHEN p.no_id IS NULL AND p.corredor IS NULL AND p.prateleira IS NULL THEN NULL
+         ELSE jsonb_build_object(
+           'aisle', p.corredor,
+           'shelf', p.prateleira,
+           'nodeId', p.no_id
+         )
+       END AS location,
+       p.imagem_url AS "imageUrl"
      FROM produto p
      WHERE p.filial_id = $1
        ${searchSql}

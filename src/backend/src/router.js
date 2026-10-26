@@ -42,7 +42,8 @@ async function route(request, response, context) {
     }
     const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
     if (!payload) return;
-    const filialId = new URL(request.url, "http://localhost").searchParams.get("filialId")
+    const suggestionParams = new URL(request.url, "http://localhost").searchParams;
+    const filialId = suggestionParams.get("storeId") || suggestionParams.get("filialId")
       || "00000000-0000-0000-0000-000000000001";
     const store = await findStore(context.pool, filialId);
     if (!store) {
@@ -51,6 +52,33 @@ async function route(request, response, context) {
     }
     const products = await findProducts(context.pool, filialId, "", 4);
     sendJson(response, 200, { suggestions: products }, context.frontendOrigin);
+    return;
+  }
+  const storeProductsMatch = pathname.match(/^\/stores\/([^/]+)\/products$/);
+  if (storeProductsMatch) {
+    if (request.method !== "GET") {
+      response.setHeader("Allow", "GET");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+    const storeId = decodeURIComponent(storeProductsMatch[1]);
+    const searchParams = new URL(request.url, "http://localhost").searchParams;
+    const search = searchParams.get("q") || "";
+    if (search.trim() && search.trim().length < 2) {
+      sendJson(response, 400, { error: "A busca deve ter pelo menos 2 caracteres." }, context.frontendOrigin);
+      return;
+    }
+    const store = await findStore(context.pool, storeId);
+    if (!store) {
+      sendJson(response, 404, { error: "Loja não encontrada." }, context.frontendOrigin);
+      return;
+    }
+    sendJson(response, 200, {
+      store,
+      products: await findProducts(context.pool, storeId, search, searchParams.get("limit")),
+    }, context.frontendOrigin);
     return;
   }
   if (pathname === "/catalog") {
@@ -62,7 +90,9 @@ async function route(request, response, context) {
     const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
     if (!payload) return;
     const searchParams = new URL(request.url, "http://localhost").searchParams;
-    const filialId = searchParams.get("filialId") || "00000000-0000-0000-0000-000000000001";
+    const filialId = searchParams.get("storeId") ||
+      searchParams.get("filialId") ||
+      "00000000-0000-0000-0000-000000000001";
     const search = searchParams.get("search") || "";
     if (search.trim() && search.trim().length < 2) {
       sendJson(response, 400, { error: "A busca deve ter pelo menos 2 caracteres." }, context.frontendOrigin);
