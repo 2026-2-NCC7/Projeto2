@@ -19,6 +19,7 @@
     "@react-navigation/native-stack": "^6.11.0",
     "expo": "52.0.0",
     "expo-asset": "~11.0.5",
+    "expo-camera": "~16.0.18",
     "expo-font": "^58.0.10",
     "expo-secure-store": "14.0.0",
     "nativewind": "4.1.23",

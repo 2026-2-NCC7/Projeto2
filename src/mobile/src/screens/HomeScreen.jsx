@@ -107,7 +107,7 @@ function SuggestionCard({ suggestion }) {
   );
 }
 
-export function HomeScreen() {
+export function HomeScreen({ navigation }) {
   const { auth } = useAuth();
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
@@ -137,7 +137,10 @@ export function HomeScreen() {
           <Text className="font-sans mt-5 text-[24px] font-extrabold text-achai">Olá!</Text>
           <Text className="font-sans mt-1 text-[13px] text-[#555]">Vamos facilitar sua próxima compra?</Text>
 
-          <Pressable className="mt-6 h-[92px] flex-row items-center rounded-[18px] bg-achai px-3.5">
+          <Pressable
+            className="mt-6 h-[92px] flex-row items-center rounded-[18px] bg-achai px-3.5"
+            onPress={() => navigation.navigate("QrScanner")}
+          >
             <View className="h-[54px] w-[54px] items-center justify-center rounded-[14px] bg-white">
               <QrCodeIcon />
             </View>

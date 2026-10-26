@@ -9,6 +9,7 @@ import { ForgotPasswordScreen } from "./src/screens/ForgotPasswordScreen";
 import { ForgotPasswordConfirmationScreen } from "./src/screens/ForgotPasswordConfirmationScreen";
 import { ResetPasswordScreen } from "./src/screens/ResetPasswordScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
+import { QrScannerScreen } from "./src/screens/QrScannerScreen";
 import { appFonts } from "./src/theme/fonts";
 import "./src/styles.css";
 
@@ -19,6 +20,7 @@ const linking = {
     screens: {
       Login: "",
       Home: "home",
+      QrScanner: "scan-qr",
       Register: "register",
       ForgotPassword: "forgot-password",
       ResetPassword: "reset-password",
@@ -40,6 +42,7 @@ export default function App() {
           <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="QrScanner" component={QrScannerScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="ForgotPasswordConfirmation" component={ForgotPasswordConfirmationScreen} />
