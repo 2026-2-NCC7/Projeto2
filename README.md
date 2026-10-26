@@ -195,7 +195,7 @@ npm start
 
 Depois, pressione `a` para abrir no emulador Android, `i` para abrir no simulador iOS ou escaneie o QR Code com o Expo Go. No Android Emulator, a API local é acessada por `10.0.2.2`; em dispositivo físico, use `EXPO_PUBLIC_API_URL=http://<IP-DA-MAQUINA>:3000 npm start`.
 
-Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API, navega para a Home após o login e armazena o JWT no armazenamento seguro do dispositivo. A Home inicia sem listas e consulta `GET /suggestions` para carregar sugestões do backend. O endpoint atualmente retorna uma lista vazia até que as regras de recomendação e o domínio de listas sejam implementados.
+Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API, navega para a Home após o login e armazena o JWT no armazenamento seguro do dispositivo. A Home consulta `GET /suggestions` e a tela `CatalogScreen`, acessível pela aba Buscar, consulta `GET /catalog?filialId=...&search=...`. A migration `006_demo_catalog.sql` cria uma filial e um catálogo de demonstração no PostgreSQL; a busca é filtrada por filial, aceita limite, ordena prefixos antes de similaridade e rejeita consultas com menos de dois caracteres. Open Food Facts pode enriquecer produtos por EAN futuramente, mas não deve ser a fonte de preço ou estoque.
 
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.

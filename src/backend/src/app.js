@@ -22,7 +22,12 @@ function createApp({
       response.end();
       return;
     }
-    route(request, response, context);
+    Promise.resolve(route(request, response, context)).catch((error) => {
+      console.error("Falha ao processar requisição:", error);
+      if (!response.headersSent) {
+        context.sendJson(response, 500, { error: "Internal server error." });
+      }
+    });
   });
 }
 

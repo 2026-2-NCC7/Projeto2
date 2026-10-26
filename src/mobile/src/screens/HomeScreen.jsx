@@ -13,7 +13,7 @@ function SectionTitle({ children, action }) {
   );
 }
 
-function BottomNavigation() {
+function BottomNavigation({ navigation }) {
   return (
     <View className="h-[72px] flex-row border-t border-[#e8e8e0] bg-white">
       {[
@@ -22,7 +22,11 @@ function BottomNavigation() {
         ["☷", "Listas", false],
         ["◉", "Perfil", false],
       ].map(([icon, label, active]) => (
-        <Pressable className="flex-1 items-center pt-2" key={label}>
+        <Pressable
+          className="flex-1 items-center pt-2"
+          key={label}
+          onPress={() => label === "Buscar" && navigation.navigate("Catalog")}
+        >
           <Text className={`text-[21px] ${active ? "text-achai" : "text-[#555]"}`}>{icon}</Text>
           <Text className={`font-sans text-[11px] ${active ? "text-achai" : "text-[#555]"}`}>{label}</Text>
         </Pressable>
@@ -31,7 +35,7 @@ function BottomNavigation() {
   );
 }
 
-function EmptyLists() {
+function EmptyLists({ onCreate }) {
   return (
     <View className="mt-4 items-center rounded-[14px] border border-[#e8e8e0] px-5 py-5">
       <Text className="text-[30px] text-achai">☷</Text>
@@ -39,7 +43,7 @@ function EmptyLists() {
       <Text className="font-sans mt-1 text-center text-[11px] text-[#555]">
         Organize suas compras e encontre tudo com mais facilidade.
       </Text>
-      <Pressable className="mt-4 rounded-[10px] bg-achai px-4 py-2">
+      <Pressable className="mt-4 rounded-[10px] bg-achai px-4 py-2" onPress={onCreate}>
         <Text className="font-inter-semibold text-xs text-ink">Criar lista</Text>
       </Pressable>
     </View>
@@ -151,8 +155,8 @@ export function HomeScreen({ navigation }) {
           </Pressable>
 
           <View className="mt-7">
-            <SectionTitle action="Ver todas">Minhas listas</SectionTitle>
-            <EmptyLists />
+            <SectionTitle>Minhas listas</SectionTitle>
+            <EmptyLists onCreate={() => navigation.navigate("CreateList")} />
           </View>
 
           <View className="mt-8">
@@ -171,7 +175,7 @@ export function HomeScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
-      <BottomNavigation />
+      <BottomNavigation navigation={navigation} />
     </View>
   );
 }
