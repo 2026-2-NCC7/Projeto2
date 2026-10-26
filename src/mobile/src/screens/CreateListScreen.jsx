@@ -1,45 +1,47 @@
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import { fetchCatalog } from "../services/catalog-api";
+import { addListItem, createShoppingList } from "../services/shopping-list-api";
 
+const DEFAULT_STORE_ID = "00000000-0000-0000-0000-000000000001";
 const categories = [
   ["Hortifruti", "🥕"],
   ["Laticínios", "🥛"],
   ["Mercearia", "🌾"],
   ["Limpeza", "🧴"],
 ];
-
-const products = [
-  { id: "banana-prata", name: "Banana prata", detail: "Porção de 1 kg", price: 6.99, icon: "🍌", category: "Hortifruti" },
-  { id: "leite-integral", name: "Leite integral", detail: "Caixa · 1 L", price: 4.79, icon: "🥛", category: "Laticínios" },
-  { id: "arroz-branco", name: "Arroz branco", detail: "Tipo 1 · Pacote 5 kg", price: 24.9, icon: "🍚", category: "Mercearia" },
-  { id: "ovos-brancos", name: "Ovos brancos", detail: "Bandeja · 12 unidades", price: 12.99, icon: "🥚", category: "Laticínios" },
-  { id: "cafe-torrado", name: "Café torrado e moído", detail: "Tradicional · 500 g", price: 18.9, icon: "☕", category: "Mercearia" },
-  { id: "detergente-neutro", name: "Detergente neutro", detail: "Frasco · 500 ml", price: 2.49, icon: "🧴", category: "Limpeza" },
-];
-
-const money = (value) => `R$ ${value.toFixed(2).replace(".", ",")}`;
+const icons = ["🍌", "🥛", "🍚", "🥚", "☕", "🧴"];
+const money = (value) => `R$ ${Number(value || 0).toFixed(2).replace(".", ",")}`;
 
 function ProductCard({ product, quantity, onChangeQuantity }) {
+  const canAdd = product.inStock !== false;
   return (
     <View className="mb-2 mr-2 w-[calc(50%-4px)] rounded-[12px] border border-[#e8e8e0] bg-white p-2">
       <View className="h-[84px] items-center justify-center rounded-[7px] bg-[#f1f1ed]">
         <Text className="text-[48px]">{product.icon}</Text>
       </View>
       <Text className="font-inter-semibold mt-2 text-[11px] text-ink">{product.name}</Text>
-      <Text className="font-sans mt-0.5 text-[9px] text-[#555]">{product.detail}</Text>
+      <Text className="font-sans mt-0.5 text-[9px] text-[#555]">{product.size || "Tamanho não informado"}</Text>
       <Text className="font-inter-semibold mt-1 text-[13px] text-ink">{money(product.price)}</Text>
+      {!canAdd ? <Text className="mt-1 font-sans text-[8px] text-[#b42318]">Fora de estoque</Text> : null}
+      {!product.location ? <Text className="mt-1 font-sans text-[8px] text-[#b05b00]">Sem localização</Text> : null}
       {quantity ? (
         <View className="mt-2 h-8 flex-row items-center justify-between rounded-[9px] bg-achai px-2">
-          <Pressable onPress={() => onChangeQuantity(-1)}>
+          <Pressable onPress={() => onChangeQuantity(-1)} accessibilityLabel={`Remover uma unidade de ${product.name}`}>
             <Text className="text-lg text-ink">−</Text>
           </Pressable>
           <Text className="font-inter-semibold text-xs text-ink">{quantity}</Text>
-          <Pressable onPress={() => onChangeQuantity(1)}>
+          <Pressable onPress={() => onChangeQuantity(1)} accessibilityLabel={`Adicionar uma unidade de ${product.name}`}>
             <Text className="text-lg text-ink">+</Text>
           </Pressable>
         </View>
       ) : (
-        <Pressable className="mt-2 h-8 items-center justify-center rounded-[9px] bg-achai" onPress={() => onChangeQuantity(1)}>
+        <Pressable
+          className={`mt-2 h-8 items-center justify-center rounded-[9px] ${canAdd ? "bg-achai" : "bg-[#e7e7e2]"}`}
+          disabled={!canAdd}
+          onPress={() => onChangeQuantity(1)}
+        >
           <Text className="font-inter-semibold text-[10px] text-ink">＋ Adicionar</Text>
         </Pressable>
       )}
@@ -48,22 +50,49 @@ function ProductCard({ product, quantity, onChangeQuantity }) {
 }
 
 export function CreateListScreen({ navigation }) {
+  const { auth } = useAuth();
   const [listName, setListName] = useState("Compra da semana");
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [quantities, setQuantities] = useState({ "banana-prata": 1, "leite-integral": 2 });
+  const [quantities, setQuantities] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    fetchCatalog(auth?.token, DEFAULT_STORE_ID)
+      .then((items) => {
+        if (active) setProducts(items.map((product, index) => ({ ...product, icon: icons[index % icons.length] })));
+      })
+      .catch(() => {
+        if (active) setProducts([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [auth?.token]);
 
   const visibleProducts = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     return products.filter((product) => {
-      const matchesSearch = !term || `${product.name} ${product.category}`.toLocaleLowerCase("pt-BR").includes(term);
+      const matchesSearch = !term ||
+        `${product.name} ${product.brand || ""} ${product.category || ""}`.toLocaleLowerCase("pt-BR").includes(term);
       return matchesSearch && (!category || product.category === category);
     });
-  }, [category, search]);
+  }, [category, products, search]);
 
   const selectedProducts = products.filter((product) => quantities[product.id]);
   const itemCount = selectedProducts.reduce((total, product) => total + quantities[product.id], 0);
-  const total = selectedProducts.reduce((sum, product) => sum + product.price * quantities[product.id], 0);
+  const total = selectedProducts.reduce(
+    (sum, product) => sum + Number(product.price || 0) * quantities[product.id],
+    0,
+  );
+  const hasLocationWarning = selectedProducts.some((product) => !product.location);
 
   const changeQuantity = (id, delta) => {
     setQuantities((current) => {
@@ -73,6 +102,28 @@ export function CreateListScreen({ navigation }) {
       else delete updated[id];
       return updated;
     });
+  };
+
+  const saveList = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const { list } = await createShoppingList(auth?.token, DEFAULT_STORE_ID, listName);
+      for (const product of selectedProducts) {
+        await addListItem(auth?.token, list.id, product.id, quantities[product.id]);
+      }
+      Alert.alert(
+        "Lista criada",
+        hasLocationWarning
+          ? "Alguns produtos não possuem localização e ficarão fora da rota."
+          : "Sua lista foi salva com sucesso.",
+      );
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert("Não foi possível criar a lista", error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -89,7 +140,6 @@ export function CreateListScreen({ navigation }) {
 
           <Text className="font-inter-semibold mt-4 text-[21px] text-achai">Criar nova lista</Text>
           <Text className="font-sans mt-1 text-[9px] text-[#777]">Marina, o que não pode faltar na sua semana?</Text>
-
           <Text className="font-sans mt-4 text-[9px] text-[#555]">Nome da lista</Text>
           <View className="mt-1 h-8 flex-row items-center rounded-[8px] border border-[#e8e8e0] px-2.5">
             <TextInput className="flex-1 font-sans text-[10px] text-ink" onChangeText={setListName} value={listName} />
@@ -99,10 +149,9 @@ export function CreateListScreen({ navigation }) {
           <View className="mt-3 flex-row items-center rounded-[9px] bg-[#fff3e8] px-2.5 py-2">
             <Text className="mr-2 text-lg">🏪</Text>
             <View className="flex-1">
-              <Text className="font-sans text-[8px] text-[#777]">Supermercado da Fita</Text>
+              <Text className="font-sans text-[8px] text-[#777]">Supermercado selecionado</Text>
               <Text className="font-inter-semibold text-[10px] text-ink">Mercado Aurora</Text>
             </View>
-            <Text className="font-inter-semibold text-[9px] text-achai">Trocar　⌄</Text>
           </View>
 
           <View className="mt-3 h-8 flex-row items-center rounded-[8px] border border-[#e8e8e0] bg-[#f7f7f4] px-2.5">
@@ -118,7 +167,6 @@ export function CreateListScreen({ navigation }) {
 
           <View className="mt-4 flex-row items-center justify-between">
             <Text className="font-inter-semibold text-[14px] text-ink">Explore por categoria</Text>
-            <Text className="font-inter-semibold text-[9px] text-achai">Ver todas</Text>
           </View>
           <View className="mt-2 flex-row justify-between">
             {categories.map(([label, icon]) => (
@@ -132,7 +180,9 @@ export function CreateListScreen({ navigation }) {
           </View>
 
           <Text className="font-inter-semibold mt-4 text-[14px] text-achai">O básico que não pode faltar</Text>
-          <Text className="font-sans mt-0.5 text-[9px] text-[#777]">Escolha os produtos e ajuste as quantidades.</Text>
+          <Text className="font-sans mt-0.5 text-[9px] text-[#777]">
+            {loading ? "Carregando produtos..." : "Escolha os produtos e ajuste as quantidades."}
+          </Text>
           <View className="mt-3 flex-row flex-wrap">
             {visibleProducts.map((product) => (
               <ProductCard
@@ -143,7 +193,15 @@ export function CreateListScreen({ navigation }) {
               />
             ))}
           </View>
+          {!loading && visibleProducts.length === 0 ? (
+            <Text className="font-sans mt-3 text-center text-[10px] text-[#777]">Nenhum produto encontrado.</Text>
+          ) : null}
           <Text className="font-sans mt-1 text-[8px] text-[#999]">Preços demonstrativos. Os valores podem variar na loja.</Text>
+          {hasLocationWarning ? (
+            <Text className="mt-2 font-sans text-[9px] text-[#b05b00]">
+              Alguns itens não possuem localização e ficarão fora da rota.
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
 
@@ -154,16 +212,22 @@ export function CreateListScreen({ navigation }) {
         </View>
         {selectedProducts.slice(0, 2).map((product) => (
           <View className="mt-1 flex-row justify-between" key={product.id}>
-            <Text className="font-sans text-[8px] text-[#777]">{quantities[product.id]} × {product.name} · {product.detail.split(" · ")[0]}</Text>
-            <Text className="font-sans text-[8px] text-ink">{money(product.price * quantities[product.id])}</Text>
+            <Text className="font-sans text-[8px] text-[#777]">{quantities[product.id]} × {product.name}</Text>
+            <Text className="font-sans text-[8px] text-ink">{money(Number(product.price || 0) * quantities[product.id])}</Text>
           </View>
         ))}
         <View className="mt-3 flex-row items-center justify-between border-t border-[#ead9ca] pt-2">
           <Text className="font-sans text-[9px] text-[#777]">Total estimado</Text>
           <Text className="font-inter-semibold text-[17px] text-ink">{money(total)}</Text>
         </View>
-        <Pressable className="mt-2 h-8 items-center justify-center rounded-[9px] bg-achai" onPress={() => navigation.goBack()}>
-          <Text className="font-inter-semibold text-[10px] text-ink">☷　Criar lista com {itemCount} itens</Text>
+        <Pressable
+          className={`mt-2 h-8 items-center justify-center rounded-[9px] ${saving ? "bg-[#e7e7e2]" : "bg-achai"}`}
+          disabled={saving}
+          onPress={saveList}
+        >
+          <Text className="font-inter-semibold text-[10px] text-ink">
+            {saving ? "Salvando..." : `☷　Criar lista com ${itemCount} itens`}
+          </Text>
         </Pressable>
         <Text className="font-sans mt-2 text-center text-[8px] text-[#777]">Você pode editar sua lista depois de criar.</Text>
       </View>

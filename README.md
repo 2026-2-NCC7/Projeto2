@@ -197,6 +197,8 @@ Depois, pressione `a` para abrir no emulador Android, `i` para abrir no simulado
 
 Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API, navega para a Home após o login e armazena o JWT no armazenamento seguro do dispositivo. A Home consulta `GET /suggestions` e a tela `CatalogScreen`, acessível pela aba Buscar, consulta `GET /stores/{storeId}/products?q=...&limit=...`. O alias legado `GET /catalog?filialId=...&search=...` continua disponível. As migrations `006_demo_catalog.sql` e `007_phase1_catalog_seed.sql` criam duas filiais e 15/10 produtos de demonstração no PostgreSQL; a busca é filtrada por filial, aceita limite, ordena prefixos antes de similaridade e rejeita consultas com menos de dois caracteres. Open Food Facts pode enriquecer produtos por EAN futuramente, mas não deve ser a fonte de preço ou estoque.
 
+As listas de compras são persistidas pela migration `008_shopping_lists.sql`. O mobile cria uma lista com `POST /stores/{storeId}/lists`, adiciona itens com `POST /lists/{listId}/items`, altera quantidades com `PATCH /lists/{listId}/items/{productId}`, remove itens com `DELETE /lists/{listId}/items/{productId}` e consulta o resumo com `GET /lists/{listId}`. A API valida o proprietário da lista, mantém todos os itens na mesma filial, bloqueia produtos fora de estoque e sinaliza no resumo quando algum produto não possui localização para a rota.
+
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.
 
