@@ -10,7 +10,8 @@ module.exports = {
       },
       fontFamily: {
         sans: ["Inter"],
-        brand: ["Rubik"],
+        "inter-semibold": ["Inter-SemiBold"],
+        brand: ["Rubik-Bold"],
       },
     },
   },

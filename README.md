@@ -149,6 +149,8 @@ Faça login enviando `POST /auth/login` com `Content-Type: application/json` e o
 
 O cadastro também está disponível em `POST /auth/register`. Envie `name`, `email`, `password` e `password_confirmation`; o endpoint retorna HTTP 201 quando a conta é criada e HTTP 409 quando o e-mail já está cadastrado. A página React de registro pode ser acessada pelo botão `Criar administrador` ou diretamente em `http://localhost:5173/#register`.
 
+A recuperação de senha usa um link direto, sem código digitável. O endpoint `POST /auth/forgot-password` recebe `email`, cria um token de uso único com validade de uma hora e, no ambiente local, imprime o link no log da API. Em produção, esse ponto deve ser conectado a um provedor de e-mail. O link abre a tela `/reset-password`, que envia o token e a nova senha para `POST /auth/reset-password`.
+
 Operações administrativas de criação de usuários usam `POST /admin/register` e exigem `Authorization: Bearer <token>` de um Administrador. Essa rota cria Gerentes (`role: manager`); tokens de Gerente recebem HTTP 403. O endpoint `/auth/register` continua reservado ao bootstrap inicial de Administradores.
 
 O frontend fica separado em `src/frontend` e usa React + Vite. Em um terminal, execute:
@@ -168,7 +170,7 @@ Em outro ambiente, configure `VITE_API_URL` no frontend e `FRONTEND_ORIGIN` na A
 O aplicativo instalável fica em `src/mobile` e é uma aplicação React Native com Expo. A estrutura separa:
 
 - `App.jsx`: composição da aplicação e navegação.
-- `src/screens`: telas nativas, começando por `LoginScreen`.
+- `src/screens`: telas nativas de autenticação e a `HomeScreen`.
 - `src/components`: componentes visuais reutilizáveis.
 - `src/context`: estado de sessão e autenticação.
 - `src/services`: comunicação com a API REST.
@@ -193,7 +195,7 @@ npm start
 
 Depois, pressione `a` para abrir no emulador Android, `i` para abrir no simulador iOS ou escaneie o QR Code com o Expo Go. No Android Emulator, a API local é acessada por `10.0.2.2`; em dispositivo físico, use `EXPO_PUBLIC_API_URL=http://<IP-DA-MAQUINA>:3000 npm start`.
 
-Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API e armazena o JWT no armazenamento seguro do dispositivo.
+Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API, navega para a Home após o login e armazena o JWT no armazenamento seguro do dispositivo. A Home inicia sem listas e consulta `GET /suggestions` para carregar sugestões do backend. O endpoint atualmente retorna uma lista vazia até que as regras de recomendação e o domínio de listas sejam implementados.
 
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.

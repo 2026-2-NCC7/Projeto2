@@ -5,7 +5,7 @@ export function TextField({ label, onChangeText, secureTextEntry, value, onToggl
     <View className="relative">
       <TextInput
         accessibilityLabel={label}
-        className="h-11 rounded-[17px] bg-achai px-[21px] text-[11px] font-semibold text-ink"
+        className="h-[44px] rounded-[17px] bg-achai px-[21px] font-inter-semibold text-[10.93px] text-ink"
         onChangeText={onChangeText}
         placeholder={label}
         placeholderTextColor="#1F1F1F"
@@ -15,7 +15,7 @@ export function TextField({ label, onChangeText, secureTextEntry, value, onToggl
       />
       {onToggleSecure ? (
         <Pressable className="absolute right-3 top-0 h-11 justify-center" onPress={onToggleSecure}>
-          <Text className="text-[10px] text-ink">{secureTextEntry ? "Mostrar" : "Ocultar"}</Text>
+          <Text className="font-sans text-[10px] text-ink">{secureTextEntry ? "Mostrar" : "Ocultar"}</Text>
         </Pressable>
       ) : null}
     </View>

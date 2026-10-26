@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Brand } from "../components/Brand";
@@ -14,7 +14,7 @@ function getLoginErrorMessage(requestError) {
   return message || "Não foi possível entrar.";
 }
 
-export function LoginScreen() {
+export function LoginScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
@@ -22,6 +22,13 @@ export function LoginScreen() {
   const [securePassword, setSecurePassword] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (route.params?.registrationCompleted) {
+      setError("Conta criada com sucesso. Faça login para continuar.");
+      navigation.setParams({ registrationCompleted: undefined });
+    }
+  }, [navigation, route.params?.registrationCompleted]);
 
   async function handleSubmit() {
     setError("");
@@ -38,6 +45,7 @@ export function LoginScreen() {
     try {
       await signIn(email.trim(), password);
       setPassword("");
+      navigation.replace("Home");
     } catch (requestError) {
       setError(getLoginErrorMessage(requestError));
     } finally {
@@ -57,13 +65,13 @@ export function LoginScreen() {
       >
         <View className="flex-1 items-center px-[35px] pt-[136px]">
           <Brand />
-          <Text className="mt-7 text-center text-[22px] leading-7 text-ink">Sua compra, no seu ritmo.</Text>
-          <Text className="mt-3 max-w-[320px] text-center text-xs leading-4 text-ink">
+          <Text className="font-sans mt-7 text-center text-[22px] leading-7 text-ink">Sua compra, no seu ritmo.</Text>
+          <Text className="font-sans mt-3 max-w-[320px] text-center text-xs leading-4 text-ink">
             Entre para salvar listas de compras e personalizar sua jornada.
           </Text>
-          <Text className="mt-7 text-center text-base text-ink">Acesse sua conta</Text>
+          <Text className="font-sans mt-7 text-center text-base text-ink">Acesse sua conta</Text>
 
-          <View className="mt-6 w-full gap-[37px]">
+          <View className="mt-6 w-[218px] gap-[37px]">
             <TextField autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="E-mail" onChangeText={setEmail} value={email} />
             <TextField label="Senha" onChangeText={setPassword} onToggleSecure={() => setSecurePassword((current) => !current)} secureTextEntry={securePassword} value={password} />
             <Text className={`-mt-5 min-h-4 text-center text-xs ${error ? "text-red-700" : "text-transparent"}`}>
@@ -72,10 +80,10 @@ export function LoginScreen() {
             <PrimaryButton disabled={submitting} onPress={handleSubmit}>Entrar</PrimaryButton>
           </View>
 
-          <Pressable className="mt-7" onPress={() => setError("A recuperação de senha estará disponível em breve.")}>
+          <Pressable className="mt-7" onPress={() => navigation.navigate("ForgotPassword")}>
             <Text className="text-base font-semibold text-ink underline">Esqueci minha senha</Text>
           </Pressable>
-          <Pressable className="mt-[108px]" onPress={() => setError("A tela de cadastro estará disponível em breve.")}>
+          <Pressable className="mt-[108px]" onPress={() => navigation.navigate("Register")}>
             <Text className="text-center text-base font-semibold text-ink underline">Ainda não tem conta? Criar conta</Text>
           </Pressable>
           <Text className="mt-7 max-w-[300px] text-center text-[10px] leading-3 text-ink">
