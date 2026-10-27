@@ -149,6 +149,8 @@ Faça login enviando `POST /auth/login` com `Content-Type: application/json` e o
 
 O cadastro também está disponível em `POST /auth/register`. Envie `name`, `email`, `password` e `password_confirmation`; o endpoint retorna HTTP 201 quando a conta é criada e HTTP 409 quando o e-mail já está cadastrado. A página React de registro pode ser acessada pelo botão `Criar administrador` ou diretamente em `http://localhost:5173/#register`.
 
+A recuperação de senha usa um link direto, sem código digitável. O endpoint `POST /auth/forgot-password` recebe `email`, cria um token de uso único com validade de uma hora e, no ambiente local, imprime o link no log da API. Em produção, esse ponto deve ser conectado a um provedor de e-mail. O link abre a tela `/reset-password`, que envia o token e a nova senha para `POST /auth/reset-password`.
+
 Operações administrativas de criação de usuários usam `POST /admin/register` e exigem `Authorization: Bearer <token>` de um Administrador. Essa rota cria Gerentes (`role: manager`); tokens de Gerente recebem HTTP 403. O endpoint `/auth/register` continua reservado ao bootstrap inicial de Administradores.
 
 O frontend fica separado em `src/frontend` e usa React + Vite. Em um terminal, execute:
@@ -161,7 +163,43 @@ npm run dev
 
 Abra `http://localhost:5173`. O Vite encaminha `/auth` e `/health` para a API em `http://localhost:3000`. A tela apresenta os estados de validação local, carregamento, erro de credenciais e sucesso; o token recebido fica apenas na `sessionStorage` do navegador até a aba ser encerrada.
 
-Em outro ambiente, configure `VITE_API_URL` no frontend e `FRONTEND_ORIGIN` na API para a origem pública do frontend.
+Em outro ambiente, configure `VITE_API_URL` no frontend e `FRONTEND_ORIGIN` na API para as origens permitidas, separadas por vírgula. Por padrão, a API aceita o frontend Vite (`http://localhost:5173`) e o Expo Web (`http://localhost:8081`).
+
+### Aplicativo mobile
+
+O aplicativo instalável fica em `src/mobile` e é uma aplicação React Native com Expo. A estrutura separa:
+
+- `App.jsx`: composição da aplicação e navegação.
+- `src/screens`: telas nativas de autenticação e a `HomeScreen`.
+- `src/components`: componentes visuais reutilizáveis.
+- `src/context`: estado de sessão e autenticação.
+- `src/services`: comunicação com a API REST.
+- `src/storage`: persistência segura no dispositivo com `expo-secure-store`.
+- `src/config`: configuração de ambiente e endereço da API.
+
+A estilização usa NativeWind, a integração mobile do Tailwind CSS. O app nativo é independente do Web App em `src/frontend`, mas compartilha a API do backend em `src/backend`, como definido na seção 6.3.6 do documento do projeto.
+
+Para testar o app nativo:
+
+```sh
+# Terminal 1: API
+cd src/backend
+set JWT_SECRET=chave-local-com-pelo-menos-32-caracteres
+npm start
+
+# Terminal 2: Expo
+cd src/mobile
+npm install
+npm start
+```
+
+Depois, pressione `a` para abrir no emulador Android, `i` para abrir no simulador iOS ou escaneie o QR Code com o Expo Go. No Android Emulator, a API local é acessada por `10.0.2.2`; em dispositivo físico, use `EXPO_PUBLIC_API_URL=http://<IP-DA-MAQUINA>:3000 npm start`.
+
+Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API, navega para a Home após o login e armazena o JWT no armazenamento seguro do dispositivo. A Home consulta `GET /suggestions` e a tela `CatalogScreen`, acessível pela aba Buscar, consulta `GET /stores/{storeId}/products?q=...&limit=...`. O alias legado `GET /catalog?filialId=...&search=...` continua disponível. As migrations `006_demo_catalog.sql` e `007_phase1_catalog_seed.sql` criam duas filiais e 15/10 produtos de demonstração no PostgreSQL; a busca é filtrada por filial, aceita limite, ordena prefixos antes de similaridade e rejeita consultas com menos de dois caracteres. Open Food Facts pode enriquecer produtos por EAN futuramente, mas não deve ser a fonte de preço ou estoque.
+
+As listas de compras são persistidas pela migration `008_shopping_lists.sql`. O mobile cria uma lista com `POST /stores/{storeId}/lists`, adiciona itens com `POST /lists/{listId}/items`, altera quantidades com `PATCH /lists/{listId}/items/{productId}`, remove itens com `DELETE /lists/{listId}/items/{productId}` e consulta o resumo com `GET /lists/{listId}`. A API valida o proprietário da lista, mantém todos os itens na mesma filial, bloqueia produtos fora de estoque e sinaliza no resumo quando algum produto não possui localização para a rota.
+
+O QR Code da loja pode conter o UUID da filial diretamente, um JSON com `storeId`/`filialId` ou uma URL com esses parâmetros ou com o caminho `/stores/{storeId}`. O mobile valida o identificador com `GET /stores/{storeId}` antes de persistir `currentStoreId` no armazenamento seguro. Depois da validação, catálogo, sugestões e criação de listas usam a loja atual; sem uma loja selecionada, o usuário é direcionado ao leitor de QR Code.
 
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.

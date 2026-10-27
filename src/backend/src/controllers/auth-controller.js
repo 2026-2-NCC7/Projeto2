@@ -6,6 +6,8 @@ const {
   TOKEN_TTL_SECONDS,
   registerAdmin,
   registerUser,
+  requestPasswordReset,
+  resetPassword,
 } = require("../services/auth-service");
 const { readJsonBody, sendJson } = require("../utils/http");
 
@@ -80,4 +82,47 @@ async function register(request, response, context) {
   }
 }
 
-module.exports = { login, register };
+async function forgotPassword(request, response, context) {
+  let payload;
+  try {
+    payload = await readJsonBody(request, MAX_REQUEST_BODY_BYTES);
+  } catch (error) {
+    sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+    return;
+  }
+  if (!isValidEmail(payload?.email)) {
+    sendJson(response, 400, { error: "Informe um e-mail válido." }, context.frontendOrigin);
+    return;
+  }
+
+  try {
+    await requestPasswordReset(context.pool, payload.email, context.passwordResetBaseUrl, console.log);
+    sendJson(response, 200, {
+      message: "Se o e-mail estiver cadastrado, enviaremos um link de redefinição.",
+    }, context.frontendOrigin);
+  } catch (error) {
+    console.error("Falha na solicitação de redefinição:", error);
+    sendJson(response, 503, { error: "Não foi possível solicitar a redefinição agora." }, context.frontendOrigin);
+  }
+}
+
+async function reset(request, response, context) {
+  try {
+    const payload = await readJsonBody(request, MAX_REQUEST_BODY_BYTES);
+    if (payload.password !== payload.password_confirmation) {
+      sendJson(response, 400, { error: "As senhas não conferem." }, context.frontendOrigin);
+      return;
+    }
+    await resetPassword(context.pool, payload.token, payload.password);
+    sendJson(response, 200, { message: "Senha redefinida com sucesso." }, context.frontendOrigin);
+  } catch (error) {
+    if (error instanceof TypeError || error.statusCode) {
+      sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+      return;
+    }
+    console.error("Falha na redefinição de senha:", error);
+    sendJson(response, 503, { error: "Não foi possível redefinir a senha agora." }, context.frontendOrigin);
+  }
+}
+
+module.exports = { forgotPassword, login, register, reset };

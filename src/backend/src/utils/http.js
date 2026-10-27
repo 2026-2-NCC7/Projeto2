@@ -1,11 +1,15 @@
 function sendJson(response, statusCode, payload, origin) {
-  response.writeHead(statusCode, {
+  const headers = {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Cache-Control": "no-store",
     "Content-Type": "application/json",
-  });
+  };
+  if (origin) {
+    headers["Access-Control-Allow-Origin"] = origin;
+    headers.Vary = "Origin";
+  }
+  response.writeHead(statusCode, headers);
   response.end(JSON.stringify(payload));
 }
 

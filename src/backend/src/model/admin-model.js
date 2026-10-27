@@ -8,6 +8,16 @@ async function findActiveAdmin(pool, email) {
   return rows[0] || null;
 }
 
+async function findActiveAdminByEmail(pool, email) {
+  const { rows } = await pool.query(
+    `SELECT id, email
+     FROM admin_user
+     WHERE lower(email) = lower($1) AND active = TRUE`,
+    [email],
+  );
+  return rows[0] || null;
+}
+
 async function insertAdmin(pool, email, passwordHash, displayName = "Administrador", role = "admin") {
   const { rows } = await pool.query(
     `INSERT INTO admin_user (email, password_hash, display_name, role)
@@ -19,4 +29,4 @@ async function insertAdmin(pool, email, passwordHash, displayName = "Administrad
   return rows[0] || null;
 }
 
-module.exports = { findActiveAdmin, insertAdmin };
+module.exports = { findActiveAdmin, findActiveAdminByEmail, insertAdmin };
