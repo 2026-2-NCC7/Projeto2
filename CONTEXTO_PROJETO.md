@@ -12,6 +12,8 @@ O trabalho atual concluiu a Fase 3 — Lista de compras.
 
 A Fase 4 — QR Code está em implementação nesta continuação: leitura real com `CameraView`, validação do payload, validação da loja no backend e persistência de `currentStoreId`.
 
+A Fase 5 — Rota foi implementada: cálculo após confirmação da lista, menor caminho no grafo, paradas localizadas e seção separada para itens sem localização.
+
 ## Stack
 
 ### Mobile
@@ -194,6 +196,26 @@ Implementado:
 - tela de catálogo orientando o usuário a escanear antes de buscar.
 
 O payload inválido ou pertencente a uma loja inexistente não é persistido. O identificador da loja demo com UUID não convencional é aceito porque a validação usa o formato estrutural de UUID, não a versão RFC.
+
+### Fase 5 — Rota
+
+Arquivos relevantes:
+
+- `src/backend/migrations/009_confirmed_lists.sql`;
+- `src/backend/src/model/route-model.js`;
+- `src/backend/src/router.js`;
+- `src/mobile/src/services/route-api.js`;
+- `src/mobile/src/screens/RouteScreen.jsx`;
+- `src/mobile/src/screens/CreateListScreen.jsx`;
+
+Endpoint:
+
+```http
+POST /lists/{listId}/route
+Authorization: Bearer <token>
+```
+
+Uma lista criada pela tela mobile é registrada como `confirmed`. O cálculo parte do nó `tipo = 'entrada'`, usa as arestas bidirecionais respeitando `bidirecional`, ordena as paradas por menor caminho e separa produtos sem `nodeId` ou sem conexão no grafo em `unlocatedItems`.
 
 ## Estado do mobile na Fase 3
 

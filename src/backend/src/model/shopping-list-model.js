@@ -47,9 +47,10 @@ async function createList(pool, ownerId, storeId, name) {
   const normalizedName = normalizeListName(name);
   if (!normalizedName) return null;
   const result = await pool.query(
-    `INSERT INTO shopping_list (admin_user_id, filial_id, nome)
-     VALUES ($1, $2, $3)
-     RETURNING id, nome AS name, filial_id AS "storeId", created_at AS "createdAt", updated_at AS "updatedAt"`,
+    `INSERT INTO shopping_list (admin_user_id, filial_id, nome, status, confirmed_at)
+     VALUES ($1, $2, $3, 'confirmed', NOW())
+     RETURNING id, nome AS name, filial_id AS "storeId", status, confirmed_at AS "confirmedAt",
+               created_at AS "createdAt", updated_at AS "updatedAt"`,
     [ownerId, storeId, normalizedName],
   );
   return result.rows[0] || null;

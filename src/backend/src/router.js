@@ -11,6 +11,7 @@ const {
   updateListItem,
   upsertListItem,
 } = require("./model/shopping-list-model");
+const { calculateListRoute } = require("./model/route-model");
 
 async function route(request, response, context) {
   const authorizedContext = {
@@ -163,6 +164,23 @@ async function route(request, response, context) {
     return;
   }
   const listMatch = pathname.match(/^\/lists\/([^/]+)$/);
+  const listRouteMatch = pathname.match(/^\/lists\/([^/]+)\/route$/);
+  if (listRouteMatch) {
+    if (request.method !== "POST") {
+      response.setHeader("Allow", "POST");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+    const result = await calculateListRoute(context.pool, decodeURIComponent(listRouteMatch[1]), payload.sub);
+    if (result.error) {
+      sendJson(response, result.status, { error: result.error }, context.frontendOrigin);
+      return;
+    }
+    sendJson(response, 200, result, context.frontendOrigin);
+    return;
+  }
   if (listMatch) {
     if (request.method !== "GET") {
       response.setHeader("Allow", "GET");
