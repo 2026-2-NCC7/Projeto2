@@ -201,6 +201,8 @@ As listas de compras são persistidas pela migration `008_shopping_lists.sql`. O
 
 O QR Code da loja pode conter o UUID da filial diretamente, um JSON com `storeId`/`filialId` ou uma URL com esses parâmetros ou com o caminho `/stores/{storeId}`. O mobile valida o identificador com `GET /stores/{storeId}` antes de persistir `currentStoreId` no armazenamento seguro. Depois da validação, catálogo, sugestões e criação de listas usam a loja atual; sem uma loja selecionada, o usuário é direcionado ao leitor de QR Code.
 
+A rota é calculada somente depois que a lista é criada/confirmada. O endpoint `POST /lists/{listId}/route` percorre o grafo da filial a partir do nó de entrada, usa apenas produtos com `nodeId` e retorna as paradas ordenadas pelo menor caminho. Itens sem localização, ou sem conexão no grafo, aparecem em `unlocatedItems` e não participam da rota. O mobile exibe as paradas localizadas e uma seção separada “Fora da rota”.
+
 ## 📋 Licença/License
 Utilize o link <https://chooser-beta.creativecommons.org/> para fazer uma licença CC BY 4.0.
 

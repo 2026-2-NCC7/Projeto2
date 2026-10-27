@@ -6,6 +6,7 @@ const {
   normalizeQuantity,
   upsertListItem,
 } = require("../src/model/shopping-list-model");
+const { shortestPath } = require("../src/model/route-model");
 
 test("valida nome e quantidade da lista", () => {
   assert.equal(normalizeListName("  Compra da semana  "), "Compra da semana");
@@ -56,4 +57,21 @@ test("resume total e alerta de localização ausente", async () => {
   assert.equal(summary.itemCount, 3);
   assert.equal(summary.hasLocationWarning, true);
   assert.match(summary.locationWarning, /fora da rota/i);
+});
+
+test("calcula o menor caminho entre nós do grafo", () => {
+  const nodes = new Map([
+    ["1", { id: 1 }],
+    ["2", { id: 2 }],
+    ["3", { id: 3 }],
+  ]);
+  const adjacency = new Map([
+    ["1", [{ to: "2", distance: 4 }, { to: "3", distance: 20 }]],
+    ["2", [{ to: "3", distance: 3 }]],
+  ]);
+
+  assert.deepEqual(shortestPath(adjacency, nodes, "1", "3"), {
+    path: ["1", "2", "3"],
+    distance: 7,
+  });
 });

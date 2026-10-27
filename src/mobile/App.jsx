@@ -12,6 +12,7 @@ import { HomeScreen } from "./src/screens/HomeScreen";
 import { QrScannerScreen } from "./src/screens/QrScannerScreen";
 import { CatalogScreen } from "./src/screens/CatalogScreen";
 import { CreateListScreen } from "./src/screens/CreateListScreen";
+import { RouteScreen } from "./src/screens/RouteScreen";
 import { appFonts } from "./src/theme/fonts";
 import "./src/styles.css";
 
@@ -25,6 +26,7 @@ const linking = {
       QrScanner: "scan-qr",
       Catalog: "catalog",
       CreateList: "create-list",
+      Route: "route",
       Register: "register",
       ForgotPassword: "forgot-password",
       ResetPassword: "reset-password",
@@ -49,6 +51,7 @@ export default function App() {
             <Stack.Screen name="QrScanner" component={QrScannerScreen} />
             <Stack.Screen name="Catalog" component={CatalogScreen} />
             <Stack.Screen name="CreateList" component={CreateListScreen} />
+            <Stack.Screen name="Route" component={RouteScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="ForgotPasswordConfirmation" component={ForgotPasswordConfirmationScreen} />

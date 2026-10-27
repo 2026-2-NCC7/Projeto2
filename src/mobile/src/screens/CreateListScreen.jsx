@@ -123,13 +123,7 @@ export function CreateListScreen({ navigation }) {
       for (const product of selectedProducts) {
         await addListItem(auth?.token, list.id, product.id, quantities[product.id]);
       }
-      Alert.alert(
-        "Lista criada",
-        hasLocationWarning
-          ? "Alguns produtos não possuem localização e ficarão fora da rota."
-          : "Sua lista foi salva com sucesso.",
-      );
-      navigation.goBack();
+      navigation.replace("Route", { listId: list.id, hasLocationWarning });
     } catch (error) {
       Alert.alert("Não foi possível criar a lista", error.message);
     } finally {
