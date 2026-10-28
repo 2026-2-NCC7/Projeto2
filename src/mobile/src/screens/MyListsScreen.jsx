@@ -30,20 +30,6 @@ const savedLists = [
   },
 ];
 
-function ChevronLeftIcon({ size = 24, color = "#F26900" }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M15 18L9 12L15 6"
-        stroke={color}
-        strokeWidth={2.4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 function ChevronRightIcon({ size = 18, color = "#F26900" }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
@@ -90,14 +76,6 @@ function SavedListCard({ item, onPress }) {
 export function MyListsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
-  const handleGoBack = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate("Home");
-    }
-  };
-
   return (
     <View className="flex-1 bg-white">
       <ScrollView
@@ -105,28 +83,28 @@ export function MyListsScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-5" style={{ paddingTop: Math.max(insets.top, 44) + 24 }}>
-          {/* Cabeçalho */}
-          <View className="flex-row items-center">
-            <Pressable
-              accessibilityLabel="Voltar"
-              className="mr-2 h-[34px] w-7 items-center justify-center"
-              hitSlop={8}
-              onPress={handleGoBack}
-            >
-              <ChevronLeftIcon />
-            </Pressable>
-            <Text className="font-inter-extrabold text-[32px] leading-[39px] text-achai">Minhas listas</Text>
-          </View>
+        <View
+          className="px-5"
+          style={{ paddingTop: Math.max(insets.top, 44) + 20 }}
+        >
+          {/* Cabeçalho no mesmo padrão de Buscar supermercados */}
+          <View className="gap-3">
+            <Text className="font-brand text-[22px] leading-[26px] text-ink">Ach.ai</Text>
+            <Text className="font-inter-extrabold text-[25px] leading-[30px] text-achai">
+              Minhas listas
+            </Text>
 
-          {/* Botão Criar nova lista */}
-          <Pressable
-            accessibilityRole="button"
-            className="mt-3 h-12 items-center justify-center rounded-[14px] bg-achai"
-            onPress={() => navigation.navigate("CreateList")}
-          >
-            <Text className="font-inter-semibold text-[14px] leading-[17px] text-ink">+  Criar nova lista</Text>
-          </Pressable>
+            {/* Botão Criar nova lista */}
+            <Pressable
+              accessibilityRole="button"
+              className="h-12 items-center justify-center rounded-[14px] bg-achai"
+              onPress={() => navigation.navigate("CreateList")}
+            >
+              <Text className="font-inter-semibold text-[14px] leading-[17px] text-ink">
+                +  Criar nova lista
+              </Text>
+            </Pressable>
+          </View>
 
           {/* Listas salvas */}
           <View className="mt-[22px] gap-4">

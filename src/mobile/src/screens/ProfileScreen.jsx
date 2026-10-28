@@ -204,15 +204,19 @@ export function ProfileScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-5" style={{ paddingTop: Math.max(insets.top, 44) + 24 }}>
-          {/* Marca e título */}
-          <Text className="pl-0.5 font-brand text-[22px] leading-[26px] text-ink">Ach.ai</Text>
-          <Text className="mt-1.5 pl-0.5 font-inter-extrabold text-[32px] leading-[39px] text-achai">
-            Meu perfil
-          </Text>
+        <View
+          className="px-5"
+          style={{ paddingTop: Math.max(insets.top, 44) + 20 }}
+        >
+          {/* Cabeçalho padronizado */}
+          <View className="gap-3">
+            <Text className="font-brand text-[22px] leading-[26px] text-ink">Ach.ai</Text>
+            <Text className="font-inter-extrabold text-[25px] leading-[30px] text-achai">
+              Meu perfil
+            </Text>
 
-          {/* Card de perfil */}
-          <View className="mt-[3px] h-[108px] flex-row items-center rounded-[14px] border border-[#E8E8E0] bg-white px-3.5">
+            {/* Card de perfil */}
+            <View className="h-[108px] flex-row items-center rounded-[14px] border border-[#E8E8E0] bg-white px-3.5">
             <View className="relative h-[66px] w-[66px] items-center justify-center rounded-full bg-[#FFF4E8]">
               <Text className="font-inter-semibold text-[23px] leading-[28px] text-achai">{initials}</Text>
               <View style={{ position: "absolute", right: -4, bottom: -4 }}>
@@ -220,16 +224,17 @@ export function ProfileScreen({ navigation }) {
               </View>
             </View>
 
-            <View className="ml-3.5 flex-1">
-              <Text className="font-inter-semibold text-[16px] leading-[19px] text-ink" numberOfLines={1}>
-                {userName}
-              </Text>
-              <Text className="mt-2 font-sans text-[12px] leading-[15px] text-[#555555]" numberOfLines={1}>
-                {userEmail}
-              </Text>
-              <Text className="mt-2 font-inter-semibold text-[11px] leading-[13px] text-achai">
-                Conta verificada
-              </Text>
+              <View className="ml-3.5 flex-1">
+                <Text className="font-inter-semibold text-[16px] leading-[19px] text-ink" numberOfLines={1}>
+                  {userName}
+                </Text>
+                <Text className="mt-2 font-sans text-[12px] leading-[15px] text-[#555555]" numberOfLines={1}>
+                  {userEmail}
+                </Text>
+                <Text className="mt-2 font-inter-semibold text-[11px] leading-[13px] text-achai">
+                  Conta verificada
+                </Text>
+              </View>
             </View>
           </View>
 

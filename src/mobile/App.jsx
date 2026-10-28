@@ -11,6 +11,7 @@ import { ResetPasswordScreen } from "./src/screens/ResetPasswordScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { QrScannerScreen } from "./src/screens/QrScannerScreen";
 import { CatalogScreen } from "./src/screens/CatalogScreen";
+import { StoreDetailsScreen } from "./src/screens/StoreDetailsScreen";
 import { MyListsScreen } from "./src/screens/MyListsScreen";
 import { CreateListScreen } from "./src/screens/CreateListScreen";
 import { RouteScreen } from "./src/screens/RouteScreen";
@@ -35,6 +36,7 @@ const linking = {
       Home: "home",
       QrScanner: "scan-qr",
       Catalog: "catalog",
+      StoreDetails: "store-details",
       MyLists: "lists",
       CreateList: "create-list",
       Route: "route",
@@ -70,6 +72,7 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="QrScanner" component={QrScannerScreen} />
             <Stack.Screen name="Catalog" component={CatalogScreen} />
+            <Stack.Screen name="StoreDetails" component={StoreDetailsScreen} />
             <Stack.Screen name="MyLists" component={MyListsScreen} />
             <Stack.Screen name="CreateList" component={CreateListScreen} />
             <Stack.Screen name="Route" component={RouteScreen} />
