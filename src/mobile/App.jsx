@@ -15,6 +15,14 @@ import { MyListsScreen } from "./src/screens/MyListsScreen";
 import { CreateListScreen } from "./src/screens/CreateListScreen";
 import { RouteScreen } from "./src/screens/RouteScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
+import { PersonalDataScreen } from "./src/screens/PersonalDataScreen";
+import { PreferencesScreen } from "./src/screens/PreferencesScreen";
+import { PrivacyScreen } from "./src/screens/PrivacyScreen";
+import { PrivacyPolicyScreen } from "./src/screens/PrivacyPolicyScreen";
+import { SecurityScreen } from "./src/screens/SecurityScreen";
+import { HelpScreen } from "./src/screens/HelpScreen";
+import { ContactTeamScreen } from "./src/screens/ContactTeamScreen";
+import { ContactSuccessScreen } from "./src/screens/ContactSuccessScreen";
 import { appFonts } from "./src/theme/fonts";
 import "./src/styles.css";
 
@@ -31,6 +39,14 @@ const linking = {
       CreateList: "create-list",
       Route: "route",
       Profile: "profile",
+      PersonalData: "personal-data",
+      Preferences: "preferences",
+      Privacy: "privacy",
+      PrivacyPolicy: "privacy-policy",
+      Security: "security",
+      Help: "help",
+      ContactTeam: "contact-team",
+      ContactSuccess: "contact-success",
       Register: "register",
       ForgotPassword: "forgot-password",
       ResetPassword: "reset-password",
@@ -58,6 +74,14 @@ export default function App() {
             <Stack.Screen name="CreateList" component={CreateListScreen} />
             <Stack.Screen name="Route" component={RouteScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="PersonalData" component={PersonalDataScreen} />
+            <Stack.Screen name="Preferences" component={PreferencesScreen} />
+            <Stack.Screen name="Privacy" component={PrivacyScreen} />
+            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+            <Stack.Screen name="Security" component={SecurityScreen} />
+            <Stack.Screen name="Help" component={HelpScreen} />
+            <Stack.Screen name="ContactTeam" component={ContactTeamScreen} />
+            <Stack.Screen name="ContactSuccess" component={ContactSuccessScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="ForgotPasswordConfirmation" component={ForgotPasswordConfirmationScreen} />

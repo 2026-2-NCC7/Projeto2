@@ -123,39 +123,45 @@ const settingsItems = [
     title: "Dados pessoais",
     detail: "Gerencie suas informações",
     Icon: PersonalDataIcon,
+    route: "PersonalData",
   },
   {
     id: "preferences",
     title: "Preferências",
     detail: "Personalize sua experiência",
     Icon: PreferencesIcon,
+    route: "Preferences",
   },
   {
     id: "privacy",
     title: "Privacidade e dados",
     detail: "Controle seus dados",
     Icon: PrivacyIcon,
+    route: "Privacy",
   },
   {
     id: "security",
     title: "Segurança",
     detail: "Senha e acesso",
     Icon: SecurityIcon,
+    route: "Security",
   },
   {
     id: "help",
     title: "Ajuda",
     detail: "Fale com a equipe",
     Icon: HelpIcon,
+    route: "Help",
   },
 ];
 
-function SettingsCard({ item }) {
+function SettingsCard({ item, onPress }) {
   const { Icon, title, detail } = item;
   return (
     <Pressable
       accessibilityRole="button"
       className="h-[74px] flex-row items-center rounded-[14px] border border-[#E8E8E0] bg-white px-[11px]"
+      onPress={onPress}
     >
       <View className="h-12 w-12 items-center justify-center rounded-[12px] bg-[#FFF4E8]">
         <Icon />
@@ -230,7 +236,11 @@ export function ProfileScreen({ navigation }) {
           {/* Lista de opções */}
           <View className="mt-[30px] gap-[14px]">
             {settingsItems.map((item) => (
-              <SettingsCard key={item.id} item={item} />
+              <SettingsCard
+                key={item.id}
+                item={item}
+                onPress={item.route ? () => navigation.navigate(item.route) : undefined}
+              />
             ))}
           </View>
 
