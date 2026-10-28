@@ -221,6 +221,10 @@ npm test
 cd src/frontend
 npm run dev
 
+# Rodar WebApp (Consumidor via QR Code — Vite :5174)
+cd src/webapp
+npm run dev
+
 # Rodar App Mobile (Expo :8081)
 cd src/mobile
 npx expo start --web

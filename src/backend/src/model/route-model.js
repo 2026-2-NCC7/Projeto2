@@ -142,4 +142,127 @@ async function calculateListRoute(pool, listId, ownerId) {
   };
 }
 
-module.exports = { calculateListRoute, shortestPath };
+async function calculateStoreRoute(pool, storeId, rawItems) {
+  const storeResult = await pool.query(
+    "SELECT id, nome AS name FROM filial WHERE id = $1",
+    [storeId],
+  );
+  const store = storeResult.rows[0];
+  if (!store) return { error: "Loja não encontrada.", status: 404 };
+
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    return { error: "Adicione pelo menos um produto na lista para gerar a rota.", status: 400 };
+  }
+
+  const normalizedMap = new Map();
+  for (const entry of rawItems) {
+    const productId = Number.parseInt(entry?.productId ?? entry?.id, 10);
+    const quantity = Number.parseInt(entry?.quantity ?? 1, 10);
+    if (!Number.isFinite(productId) || productId <= 0) continue;
+    const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+    normalizedMap.set(productId, (normalizedMap.get(productId) || 0) + safeQuantity);
+  }
+
+  const productIds = Array.from(normalizedMap.keys());
+  if (productIds.length === 0) {
+    return { error: "Informe produtos válidos para calcular a rota.", status: 400 };
+  }
+
+  const productResult = await pool.query(
+    `SELECT p.id AS "productId", p.nome AS name, p.categoria AS category,
+            p.tamanho AS size, p.no_id AS "nodeId",
+            p.corredor AS aisle, p.prateleira AS shelf
+     FROM produto p
+     WHERE p.filial_id = $1 AND p.id = ANY($2::bigint[])`,
+    [storeId, productIds],
+  );
+
+  const productsById = new Map(productResult.rows.map((row) => [Number(row.productId), row]));
+  const items = productIds
+    .map((id) => {
+      const product = productsById.get(id);
+      if (!product) return null;
+      return {
+        ...product,
+        productId: Number(product.productId),
+        quantity: normalizedMap.get(id) || 1,
+      };
+    })
+    .filter(Boolean);
+
+  if (items.length === 0) {
+    return { error: "Nenhum produto da lista foi encontrado nesta loja.", status: 404 };
+  }
+
+  const unlocatedItems = items.filter((item) => item.nodeId === null);
+  const locatedItems = items.filter((item) => item.nodeId !== null);
+
+  const graphNodesResult = await pool.query(
+    `SELECT id, ST_X(coordenadas) AS x, ST_Y(coordenadas) AS y, tipo, nome
+     FROM no_grafo
+     WHERE filial_id = $1`,
+    [storeId],
+  );
+  const edgeResult = await pool.query(
+    `SELECT origem_id AS "from", destino_id AS "to",
+            distancia_metros AS distance, bidirecional AS bidirectional
+     FROM aresta e
+     JOIN no_grafo n ON n.id = e.origem_id
+     WHERE n.filial_id = $1`,
+    [storeId],
+  );
+
+  const nodes = new Map(graphNodesResult.rows.map((node) => [String(node.id), node]));
+  const adjacency = buildAdjacency(
+    edgeResult.rows.map((edge) => ({
+      ...edge,
+      from: String(edge.from),
+      to: String(edge.to),
+    })),
+    nodes,
+  );
+  const entrance = graphNodesResult.rows.find((node) => node.tipo === "entrada");
+  const orderedStops = [];
+  let currentNode = entrance ? String(entrance.id) : null;
+  let totalDistance = 0;
+
+  for (const item of locatedItems) {
+    const target = String(item.nodeId);
+    const segment = currentNode && currentNode !== target
+      ? shortestPath(adjacency, nodes, currentNode, target)
+      : { path: [target], distance: 0 };
+    if (!segment) {
+      unlocatedItems.push({ ...item, reason: "Não há caminho conectado no grafo da loja." });
+      continue;
+    }
+    totalDistance += segment.distance;
+    orderedStops.push({
+      productId: item.productId,
+      name: item.name,
+      category: item.category,
+      size: item.size,
+      quantity: item.quantity,
+      nodeId: item.nodeId,
+      aisle: item.aisle,
+      shelf: item.shelf,
+      path: segment.path.map((nodeId) => Number(nodeId)),
+      distance: segment.distance,
+    });
+    currentNode = target;
+  }
+
+  return {
+    route: {
+      store,
+      stops: orderedStops,
+      unlocatedItems,
+      totalDistance,
+      hasLocationWarning: unlocatedItems.length > 0,
+      locationWarning: unlocatedItems.length
+        ? "Alguns produtos não possuem localização ou não estão conectados ao grafo e ficaram fora da rota."
+        : null,
+    },
+  };
+}
+
+module.exports = { calculateListRoute, calculateStoreRoute, shortestPath };

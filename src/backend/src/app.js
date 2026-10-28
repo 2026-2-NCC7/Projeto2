@@ -5,7 +5,7 @@ const { route } = require("./router");
 function createApp({
   pool,
   jwtSecret = process.env.JWT_SECRET,
-  frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:8081",
+  frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:5174,http://localhost:8081",
   passwordResetBaseUrl = process.env.PASSWORD_RESET_BASE_URL || "http://localhost:8081",
 }) {
   const allowedOrigins = frontendOrigin

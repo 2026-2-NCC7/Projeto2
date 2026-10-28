@@ -13,7 +13,7 @@ const {
   updateListItem,
   upsertListItem,
 } = require("./model/shopping-list-model");
-const { calculateListRoute } = require("./model/route-model");
+const { calculateListRoute, calculateStoreRoute } = require("./model/route-model");
 
 async function route(request, response, context) {
   const authorizedContext = {
@@ -64,6 +64,29 @@ async function route(request, response, context) {
     sendJson(response, 200, { suggestions: products }, context.frontendOrigin);
     return;
   }
+  const storeRouteMatch = pathname.match(/^\/stores\/([^/]+)\/route$/);
+  if (storeRouteMatch) {
+    if (request.method !== "POST") {
+      response.setHeader("Allow", "POST");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    let body;
+    try {
+      body = await readJsonBody(request, 32 * 1024);
+    } catch (error) {
+      sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+      return;
+    }
+    const storeId = decodeURIComponent(storeRouteMatch[1]);
+    const result = await calculateStoreRoute(context.pool, storeId, body?.items);
+    if (result.error) {
+      sendJson(response, result.status, { error: result.error }, context.frontendOrigin);
+      return;
+    }
+    sendJson(response, 200, result, context.frontendOrigin);
+    return;
+  }
   const storeProductsMatch = pathname.match(/^\/stores\/([^/]+)\/products$/);
   const storeMatch = pathname.match(/^\/stores\/([^/]+)$/);
   if (storeMatch) {
@@ -72,8 +95,6 @@ async function route(request, response, context) {
       sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
       return;
     }
-    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
-    if (!payload) return;
     const store = await findStore(context.pool, decodeURIComponent(storeMatch[1]));
     if (!store) {
       sendJson(response, 404, { error: "Loja não encontrada." }, context.frontendOrigin);
@@ -88,8 +109,6 @@ async function route(request, response, context) {
       sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
       return;
     }
-    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
-    if (!payload) return;
     const storeId = decodeURIComponent(storeProductsMatch[1]);
     const searchParams = new URL(request.url, "http://localhost").searchParams;
     const search = searchParams.get("q") || "";

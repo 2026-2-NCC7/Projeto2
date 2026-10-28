@@ -100,3 +100,65 @@ test("valida a loja do QR Code antes de iniciar o catálogo", async () => {
     assert.equal(invalid.status, 404);
   });
 });
+
+test("permite acesso sem cadastro pelo WebApp (QR Code) ao catálogo e cálculo de rota da loja", async () => {
+  const pool = {
+    async query(sql, values) {
+      if (sql.includes("FROM filial")) {
+        return values[0] === storeA
+          ? { rows: [{ id: storeA, name: "Mercado Aurora" }] }
+          : { rows: [] };
+      }
+      if (sql.includes("FROM produto p") && sql.includes("ANY")) {
+        return {
+          rows: [
+            {
+              productId: 1,
+              name: "Leite integral 1 L",
+              category: "Laticínios",
+              size: "1 un.",
+              nodeId: 2,
+              aisle: "Corredor 3",
+              shelf: "Prateleira central",
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM no_grafo")) {
+        return {
+          rows: [
+            { id: 1, x: 0, y: 0, tipo: "entrada", nome: "Entrada" },
+            { id: 2, x: 10, y: 10, tipo: "corredor", nome: "Corredor 3" },
+          ],
+        };
+      }
+      if (sql.includes("FROM aresta")) {
+        return {
+          rows: [{ from: 1, to: 2, distance: 12, bidirectional: true }],
+        };
+      }
+      return {
+        rows: [{ id: 1, name: "Leite integral 1 L", price: 5.49, inStock: true }],
+      };
+    },
+  };
+
+  await withServer(pool, async (baseUrl) => {
+    const storeRes = await fetch(`${baseUrl}/stores/${storeA}`);
+    assert.equal(storeRes.status, 200);
+
+    const productsRes = await fetch(`${baseUrl}/stores/${storeA}/products`);
+    assert.equal(productsRes.status, 200);
+
+    const routeRes = await fetch(`${baseUrl}/stores/${storeA}/route`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: [{ productId: 1, quantity: 1 }] }),
+    });
+    assert.equal(routeRes.status, 200);
+    const routeBody = await routeRes.json();
+    assert.equal(routeBody.route.stops.length, 1);
+    assert.equal(routeBody.route.stops[0].name, "Leite integral 1 L");
+    assert.equal(routeBody.route.totalDistance, 12);
+  });
+});
