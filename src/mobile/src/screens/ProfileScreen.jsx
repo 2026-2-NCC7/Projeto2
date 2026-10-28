@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -185,7 +186,15 @@ function SettingsCard({ item, onPress }) {
 
 export function ProfileScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { auth } = useAuth();
+  const { auth, refreshProfile, signOut } = useAuth();
+
+  useEffect(() => {
+    refreshProfile();
+    const unsubscribe = navigation.addListener("focus", () => {
+      refreshProfile();
+    });
+    return unsubscribe;
+  }, [navigation, refreshProfile]);
 
   const userName = auth?.user?.name || "Marina Ferreira";
   const userEmail = auth?.user?.email || "marina@email.com";
@@ -196,6 +205,11 @@ export function ProfileScreen({ navigation }) {
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
       .join("") || "MF";
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigation.navigate("Login");
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -253,7 +267,7 @@ export function ProfileScreen({ navigation }) {
           <Pressable
             accessibilityRole="button"
             className="mt-[26px] items-center py-1"
-            onPress={() => navigation.navigate("Login")}
+            onPress={handleSignOut}
           >
             <Text className="font-inter-semibold text-[14px] leading-[17px] text-achai">Sair da conta</Text>
           </Pressable>

@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-nativ
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { useAuth } from "../context/AuthContext";
+import { updatePassword } from "../services/profile-api";
 
 const stroke = { strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" };
 
@@ -106,13 +107,15 @@ function PasswordInput({ label, value, onChangeText, visible, onToggleVisible })
       <Text className="font-inter-semibold text-[14px] leading-[17px] text-ink">{label}</Text>
       <View className="h-[54px] flex-row items-center gap-3 rounded-[12px] border border-[#E8E8E0] bg-[#FAFAF8] px-4">
         <LockKeyholeIcon />
-        <TextInput
-          autoCapitalize="none"
-          className="flex-1 p-0 font-sans text-[15px] leading-[18px] text-ink"
-          onChangeText={onChangeText}
-          secureTextEntry={!visible}
-          value={value}
-        />
+            <TextInput
+              autoCapitalize="none"
+              className="flex-1 p-0 font-sans text-[15px] leading-[18px] text-ink"
+              onChangeText={onChangeText}
+              placeholder="••••••••••"
+              placeholderTextColor="#555555"
+              secureTextEntry={!visible}
+              value={value}
+            />
         <Pressable
           accessibilityLabel={visible ? `Ocultar ${label}` : `Mostrar ${label}`}
           hitSlop={8}
@@ -129,12 +132,13 @@ export function SecurityScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const { auth } = useAuth();
 
-  const [currentPassword, setCurrentPassword] = useState("••••••••••");
-  const [newPassword, setNewPassword] = useState("••••••••••");
-  const [confirmPassword, setConfirmPassword] = useState("••••••••••");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   const userName = auth?.user?.name || "Marina Ferreira";
   const initials =
@@ -153,7 +157,8 @@ export function SecurityScreen({ navigation }) {
     }
   };
 
-  const handleUpdatePassword = () => {
+  const handleUpdatePassword = async () => {
+    if (updatingPassword) return;
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert("Campos obrigatórios", "Preencha todos os campos de senha.");
       return;
@@ -162,7 +167,21 @@ export function SecurityScreen({ navigation }) {
       Alert.alert("Senhas diferentes", "A confirmação da nova senha não coincide.");
       return;
     }
-    Alert.alert("Senha atualizada", "Sua senha foi alterada com sucesso.");
+    try {
+      setUpdatingPassword(true);
+      await updatePassword(auth?.token, {
+        currentPassword,
+        newPassword,
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      Alert.alert("Senha atualizada", "Sua senha foi alterada com sucesso.");
+    } catch (error) {
+      Alert.alert("Erro ao atualizar senha", error.message || "Não foi possível alterar sua senha.");
+    } finally {
+      setUpdatingPassword(false);
+    }
   };
 
   return (
@@ -261,10 +280,13 @@ export function SecurityScreen({ navigation }) {
             {/* Atualizar senha */}
             <Pressable
               accessibilityRole="button"
-              className="h-[54px] items-center justify-center rounded-[12px] bg-achai"
+              className="h-[54px] items-center justify-center rounded-[12px] bg-achai active:opacity-90"
+              disabled={updatingPassword}
               onPress={handleUpdatePassword}
             >
-              <Text className="font-inter-bold text-[16px] leading-[19px] text-white">Atualizar senha</Text>
+              <Text className="font-inter-bold text-[16px] leading-[19px] text-white">
+                {updatingPassword ? "Atualizando..." : "Atualizar senha"}
+              </Text>
             </Pressable>
           </View>
 

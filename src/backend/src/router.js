@@ -3,6 +3,20 @@ const { adminRoutes } = require("./routes/admin-routes");
 const { health } = require("./controllers/health-controller");
 const { readJsonBody, sendJson } = require("./utils/http");
 const { requireRole } = require("./middlewares/authorization");
+const {
+  comparePassword,
+  hashPassword,
+  isValidEmail,
+  isValidPassword,
+  normalizeEmail,
+} = require("./utils/auth");
+const {
+  deactivateAdminAccount,
+  findAdminProfileById,
+  findAdminWithPasswordById,
+  updateAdminPassword,
+  updateAdminProfile,
+} = require("./model/admin-model");
 const { findProducts, findStore } = require("./model/catalog-model");
 const {
   createList,
@@ -42,6 +56,134 @@ async function route(request, response, context) {
       ...context,
       sendJson: (res, status, body) => sendJson(res, status, body, context.frontendOrigin),
     });
+    return;
+  }
+  if (pathname === "/profile") {
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+    if (request.method === "GET") {
+      const admin = await findAdminProfileById(context.pool, payload.sub);
+      if (!admin) {
+        sendJson(response, 404, { error: "Usuário não encontrado." }, context.frontendOrigin);
+        return;
+      }
+      sendJson(response, 200, {
+        user: {
+          id: admin.id,
+          name: admin.display_name || "Marina Ferreira",
+          email: admin.email,
+          role: admin.role,
+          verified: true,
+        },
+      }, context.frontendOrigin);
+      return;
+    }
+    if (request.method === "PATCH") {
+      let body;
+      try {
+        body = await readJsonBody(request, 16 * 1024);
+      } catch (error) {
+        sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+        return;
+      }
+      const name = typeof body?.name === "string" ? body.name.trim() : "";
+      const email = typeof body?.email === "string" ? body.email.trim() : "";
+      if (name.length < 2 || name.length > 120) {
+        sendJson(response, 400, { error: "Informe um nome válido entre 2 e 120 caracteres." }, context.frontendOrigin);
+        return;
+      }
+      if (!isValidEmail(email)) {
+        sendJson(response, 400, { error: "Informe um e-mail válido." }, context.frontendOrigin);
+        return;
+      }
+      try {
+        const updated = await updateAdminProfile(context.pool, payload.sub, {
+          displayName: name,
+          email: normalizeEmail(email),
+        });
+        if (!updated) {
+          sendJson(response, 404, { error: "Usuário não encontrado." }, context.frontendOrigin);
+          return;
+        }
+        sendJson(response, 200, {
+          user: {
+            id: updated.id,
+            name: updated.display_name || name,
+            email: updated.email,
+            role: updated.role,
+            verified: true,
+          },
+        }, context.frontendOrigin);
+      } catch (error) {
+        if (error && error.code === "23505") {
+          sendJson(response, 409, { error: "Este e-mail já está em uso por outra conta." }, context.frontendOrigin);
+          return;
+        }
+        sendJson(response, 503, { error: "Não foi possível atualizar os dados agora." }, context.frontendOrigin);
+      }
+      return;
+    }
+    response.setHeader("Allow", "GET, PATCH");
+    sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+    return;
+  }
+  if (pathname === "/profile/password") {
+    if (request.method !== "POST") {
+      response.setHeader("Allow", "POST");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+    let body;
+    try {
+      body = await readJsonBody(request, 16 * 1024);
+    } catch (error) {
+      sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+      return;
+    }
+    const currentPassword = body?.currentPassword;
+    const newPassword = body?.newPassword;
+    if (!isValidPassword(currentPassword) || !isValidPassword(newPassword) || Array.from(newPassword).length < 6) {
+      sendJson(response, 400, { error: "Informe a senha atual e uma nova senha com pelo menos 6 caracteres." }, context.frontendOrigin);
+      return;
+    }
+    const admin = await findAdminWithPasswordById(context.pool, payload.sub);
+    if (!admin || !(await comparePassword(currentPassword, admin.password_hash))) {
+      sendJson(response, 401, { error: "A senha atual informada está incorreta." }, context.frontendOrigin);
+      return;
+    }
+    await updateAdminPassword(context.pool, payload.sub, await hashPassword(newPassword));
+    sendJson(response, 200, { updated: true }, context.frontendOrigin);
+    return;
+  }
+  if (pathname === "/profile/delete") {
+    if (request.method !== "POST") {
+      response.setHeader("Allow", "POST");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+    let body;
+    try {
+      body = await readJsonBody(request, 16 * 1024);
+    } catch (error) {
+      sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+      return;
+    }
+    const currentPassword = body?.currentPassword;
+    if (!isValidPassword(currentPassword)) {
+      sendJson(response, 400, { error: "Para enviar a solicitação, informe sua senha atual." }, context.frontendOrigin);
+      return;
+    }
+    const admin = await findAdminWithPasswordById(context.pool, payload.sub);
+    if (!admin || !(await comparePassword(currentPassword, admin.password_hash))) {
+      sendJson(response, 401, { error: "A senha atual informada está incorreta." }, context.frontendOrigin);
+      return;
+    }
+    await deactivateAdminAccount(context.pool, payload.sub);
+    sendJson(response, 200, { deleted: true }, context.frontendOrigin);
     return;
   }
   if (pathname === "/suggestions") {

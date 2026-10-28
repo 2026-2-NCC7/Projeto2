@@ -35,34 +35,6 @@ function SearchIcon() {
   );
 }
 
-function ChevronDownSmallIcon() {
-  return (
-    <Svg width={13} height={13} viewBox="0 0 13 13" fill="none">
-      <Path
-        d="M3.25 4.875L6.5 8.125L9.75 4.875"
-        stroke="#F26900"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function SlidersHorizontalIcon() {
-  return (
-    <Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
-      <Path
-        d="M5.83333 2.91667H1.75M7 11.0833H1.75M8.16667 1.75V2.91667M8.16667 2.91667V4.08333M8.16667 2.91667H12.25M9.33333 9.91667V11.0833M9.33333 11.0833V12.25M9.33333 11.0833H12.25M12.25 7H7M4.66667 5.83333V7M4.66667 7V8.16667M4.66667 7H1.75"
-        stroke="#555555"
-        strokeWidth={1.3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 function ArrowDownWideNarrowIcon() {
   return (
     <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
@@ -125,8 +97,8 @@ const DEFAULT_STORES = [
 
 const RADIUS_OPTIONS = [
   { label: "Até 1 km", meters: 1000, zoom: 16, scale: "100 m" },
-  { label: "Até 2 km", meters: 2000, zoom: 16, scale: "100 m" },
-  { label: "Até 5 km", meters: 5000, zoom: 14, scale: "500 m" },
+  { label: "Até 2 km", meters: 2000, zoom: 14, scale: "200 m" },
+  { label: "Até 5 km", meters: 5000, zoom: 12, scale: "500 m" },
 ];
 
 function computeDistanceMeters(lat1, lon1, lat2, lon2) {
@@ -490,13 +462,12 @@ export function CatalogScreen({ navigation }) {
           {/* Filtros de descoberta — h=32, gap 8 */}
           <View className="flex-row items-center gap-2">
             <Pressable
-              className="h-8 flex-row items-center gap-[5px] rounded-full border border-achai bg-[#FFF4E8] px-3"
+              className="h-8 items-center justify-center rounded-full border border-achai bg-[#FFF4E8] px-3"
               onPress={() => setRadiusIndex((prev) => (prev + 1) % RADIUS_OPTIONS.length)}
             >
               <Text className="font-inter-semibold text-[12px] leading-[15px] text-achai">
                 {currentRadius.label}
               </Text>
-              <ChevronDownSmallIcon />
             </Pressable>
 
             <Pressable
@@ -512,14 +483,6 @@ export function CatalogScreen({ navigation }) {
               >
                 Abertos agora
               </Text>
-            </Pressable>
-
-            <Pressable
-              className="h-8 flex-row items-center gap-[5px] rounded-full border border-[#E8E8E0] bg-white px-3"
-              onPress={handleUseMyLocation}
-            >
-              <SlidersHorizontalIcon />
-              <Text className="font-sans text-[12px] leading-[15px] text-[#555555]">Filtros</Text>
             </Pressable>
           </View>
         </View>

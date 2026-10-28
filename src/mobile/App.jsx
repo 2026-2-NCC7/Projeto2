@@ -20,6 +20,7 @@ import { PersonalDataScreen } from "./src/screens/PersonalDataScreen";
 import { PreferencesScreen } from "./src/screens/PreferencesScreen";
 import { PrivacyScreen } from "./src/screens/PrivacyScreen";
 import { PrivacyPolicyScreen } from "./src/screens/PrivacyPolicyScreen";
+import { DeleteAccountScreen } from "./src/screens/DeleteAccountScreen";
 import { SecurityScreen } from "./src/screens/SecurityScreen";
 import { HelpScreen } from "./src/screens/HelpScreen";
 import { ContactTeamScreen } from "./src/screens/ContactTeamScreen";
@@ -45,6 +46,7 @@ const linking = {
       Preferences: "preferences",
       Privacy: "privacy",
       PrivacyPolicy: "privacy-policy",
+      DeleteAccount: "delete-account",
       Security: "security",
       Help: "help",
       ContactTeam: "contact-team",
@@ -81,6 +83,7 @@ export default function App() {
             <Stack.Screen name="Preferences" component={PreferencesScreen} />
             <Stack.Screen name="Privacy" component={PrivacyScreen} />
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+            <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
             <Stack.Screen name="Security" component={SecurityScreen} />
             <Stack.Screen name="Help" component={HelpScreen} />
             <Stack.Screen name="ContactTeam" component={ContactTeamScreen} />

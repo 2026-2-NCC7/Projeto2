@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -96,12 +96,23 @@ function PhoneIcon() {
 
 export function PersonalDataScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { auth } = useAuth();
+  const { auth, refreshProfile, updateUserProfile } = useAuth();
   const emailInputRef = useRef(null);
 
   const [fullName, setFullName] = useState(auth?.user?.name || "Marina Ferreira");
   const [email, setEmail] = useState(auth?.user?.email || "marina@email.com");
-  const [phone, setPhone] = useState("(11) 99999-4820");
+  const [phone, setPhone] = useState(auth?.user?.phone ?? "(11) 99999-4820");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    refreshProfile().then((user) => {
+      if (user) {
+        if (user.name) setFullName(user.name);
+        if (user.email) setEmail(user.email);
+        if (typeof user.phone === "string") setPhone(user.phone);
+      }
+    });
+  }, [refreshProfile]);
 
   const initials =
     fullName
@@ -119,8 +130,31 @@ export function PersonalDataScreen({ navigation }) {
     }
   };
 
-  const handleSave = () => {
-    Alert.alert("Dados atualizados", "Suas informações de cadastro foram salvas com sucesso.");
+  const handleSave = async () => {
+    if (saving) return;
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+    if (trimmedName.length < 2) {
+      Alert.alert("Nome inválido", "Informe um nome completo com pelo menos 2 caracteres.");
+      return;
+    }
+    if (!trimmedEmail.includes("@")) {
+      Alert.alert("E-mail inválido", "Informe um endereço de e-mail válido.");
+      return;
+    }
+    try {
+      setSaving(true);
+      await updateUserProfile({
+        name: trimmedName,
+        email: trimmedEmail,
+        phone: phone.trim(),
+      });
+      Alert.alert("Dados atualizados", "Suas informações de cadastro foram salvas com sucesso.");
+    } catch (error) {
+      Alert.alert("Erro ao salvar", error.message || "Não foi possível atualizar seus dados.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -253,10 +287,13 @@ export function PersonalDataScreen({ navigation }) {
           <View className="gap-3 pt-1">
             <Pressable
               accessibilityRole="button"
-              className="h-[54px] items-center justify-center rounded-[12px] bg-achai"
+              className="h-[54px] items-center justify-center rounded-[12px] bg-achai active:opacity-90"
+              disabled={saving}
               onPress={handleSave}
             >
-              <Text className="font-inter-bold text-[16px] leading-[19px] text-white">Salvar alterações</Text>
+              <Text className="font-inter-bold text-[16px] leading-[19px] text-white">
+                {saving ? "Salvando..." : "Salvar alterações"}
+              </Text>
             </Pressable>
             <Text className="text-center font-sans text-[12px] leading-[18px] text-[#555555]">
               As alterações só serão aplicadas ao salvar.

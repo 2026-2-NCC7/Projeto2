@@ -1,8 +1,21 @@
-import { useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Modal,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { useAuth } from "../context/AuthContext";
 
+const SHEET_DISMISS_OFFSET = 460;
+const USE_NATIVE_DRIVER = Platform.OS !== "web";
 const stroke = { strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" };
 
 function ChevronLeftIcon() {
@@ -51,6 +64,62 @@ function DownloadIcon() {
   );
 }
 
+function ExportDataSheetIcon() {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 15V3M17 10L12 15L7 10M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
+        stroke="#F26900"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function MailEnvelopeIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M3.33282 3.33398H16.6672C17.5878 3.33398 18.334 4.0801 18.334 5.00048V14.9995C18.334 15.9199 17.5878 16.666 16.6672 16.666H3.33282C2.41227 16.666 1.66602 15.9199 1.66602 14.9995V5.00048C1.66602 4.0801 2.41227 3.33398 3.33282 3.33398Z"
+        stroke="#555555"
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M18.334 5.83373L10.8409 10.6058C10.5913 10.7532 10.3004 10.8312 10.0038 10.8312C9.70715 10.8312 9.41621 10.7532 9.16662 10.6058L1.66602 5.83373"
+        stroke="#555555"
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function SuccessCheckCircleIcon() {
+  return (
+    <Svg width={34} height={34} viewBox="0 0 44 44" fill="none">
+      <Path
+        d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22 3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41Z"
+        stroke="#F26900"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M11 22L18.7 29.7L33 14.3"
+        stroke="#F26900"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 function TrashIcon() {
   return (
     <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
@@ -93,8 +162,114 @@ function PrivacyToggle({ value, onToggle, label }) {
 
 export function PrivacyScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { auth } = useAuth();
   const [useLocation, setUseLocation] = useState(false);
   const [shareUsageData, setShareUsageData] = useState(false);
+  const [copySheetVisible, setCopySheetVisible] = useState(false);
+  const [copySheetStep, setCopySheetStep] = useState("review");
+
+  const sheetTranslateY = useRef(new Animated.Value(SHEET_DISMISS_OFFSET)).current;
+
+  const backdropOpacity = sheetTranslateY.interpolate({
+    inputRange: [0, SHEET_DISMISS_OFFSET],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+
+  const verifiedEmail = auth?.user?.email || "marina@email.com";
+
+  const openCopySheet = () => {
+    setCopySheetStep("review");
+    sheetTranslateY.setValue(SHEET_DISMISS_OFFSET);
+    setCopySheetVisible(true);
+    requestAnimationFrame(() => {
+      Animated.spring(sheetTranslateY, {
+        toValue: 0,
+        damping: 24,
+        stiffness: 220,
+        mass: 0.9,
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }).start();
+    });
+  };
+
+  const closeCopySheet = (onClosed) => {
+    Animated.timing(sheetTranslateY, {
+      toValue: SHEET_DISMISS_OFFSET,
+      duration: 220,
+      useNativeDriver: USE_NATIVE_DRIVER,
+    }).start(() => {
+      setCopySheetVisible(false);
+      setCopySheetStep("review");
+      if (typeof onClosed === "function") {
+        onClosed();
+      }
+    });
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          sheetTranslateY.setValue(gestureState.dy);
+        } else {
+          sheetTranslateY.setValue(0);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 90 || gestureState.vy > 0.65) {
+          closeCopySheet();
+        } else {
+          Animated.spring(sheetTranslateY, {
+            toValue: 0,
+            damping: 24,
+            stiffness: 240,
+            mass: 0.9,
+            useNativeDriver: USE_NATIVE_DRIVER,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(sheetTranslateY, {
+          toValue: 0,
+          damping: 24,
+          stiffness: 240,
+          mass: 0.9,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }).start();
+      },
+    }),
+  ).current;
+
+  const handleDragResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          sheetTranslateY.setValue(gestureState.dy);
+        } else {
+          sheetTranslateY.setValue(0);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 75 || gestureState.vy > 0.55) {
+          closeCopySheet();
+        } else {
+          Animated.spring(sheetTranslateY, {
+            toValue: 0,
+            damping: 24,
+            stiffness: 240,
+            mass: 0.9,
+            useNativeDriver: USE_NATIVE_DRIVER,
+          }).start();
+        }
+      },
+    }),
+  ).current;
 
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
@@ -106,6 +281,10 @@ export function PrivacyScreen({ navigation }) {
 
   const handleSave = () => {
     Alert.alert("Escolhas salvas", "Suas preferências de privacidade foram atualizadas.");
+  };
+
+  const handleConfirmCopyRequest = () => {
+    setCopySheetStep("received");
   };
 
   return (
@@ -254,13 +433,8 @@ export function PrivacyScreen({ navigation }) {
               {/* Solicitar cópia dos dados */}
               <Pressable
                 accessibilityRole="button"
-                className="min-h-[94px] flex-row items-center gap-3 rounded-[14px] border border-[#E8E8E0] bg-white p-4"
-                onPress={() =>
-                  Alert.alert(
-                    "Solicitar cópia dos dados",
-                    "Sua solicitação de cópia dos dados vinculados à conta foi registrada.",
-                  )
-                }
+                className="min-h-[94px] flex-row items-center gap-3 rounded-[14px] border border-[#E8E8E0] bg-white p-4 active:opacity-90"
+                onPress={openCopySheet}
               >
                 <DownloadIcon />
                 <View className="flex-1 gap-1.5">
@@ -277,13 +451,8 @@ export function PrivacyScreen({ navigation }) {
               {/* Solicitar exclusão da conta */}
               <Pressable
                 accessibilityRole="button"
-                className="min-h-[94px] flex-row items-center gap-3 rounded-[14px] border border-[#EBCFCC] bg-[#FFF9F8] p-4"
-                onPress={() =>
-                  Alert.alert(
-                    "Solicitar exclusão da conta",
-                    "Tem certeza de que deseja iniciar a solicitação de exclusão da sua conta?",
-                  )
-                }
+                className="min-h-[94px] flex-row items-center gap-3 rounded-[14px] border border-[#EBCFCC] bg-[#FFF9F8] p-4 active:opacity-90"
+                onPress={() => navigation.navigate("DeleteAccount")}
               >
                 <TrashIcon />
                 <View className="flex-1 gap-1.5">
@@ -326,6 +495,184 @@ export function PrivacyScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
+
+      {/* Painel inferior: Solicitar cópia dos dados (Figma 2100:241 / 2100:297) */}
+      <Modal
+        animationType="none"
+        onRequestClose={() => closeCopySheet()}
+        transparent
+        visible={copySheetVisible}
+      >
+        <View className="flex-1 justify-end">
+          {/* Backdrop animado */}
+          <Animated.View
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              opacity: backdropOpacity,
+            }}
+          >
+            <Pressable
+              accessibilityLabel="Fechar painel"
+              className="flex-1"
+              onPress={() => closeCopySheet()}
+            />
+          </Animated.View>
+
+          {/* Painel deslizante com suporte a arrastar para baixo */}
+          <Animated.View
+            {...panResponder.panHandlers}
+            style={{
+              width: "100%",
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingBottom: Math.max(insets.bottom, 28),
+              transform: [{ translateY: sheetTranslateY }],
+              shadowColor: "#000000",
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 10,
+            }}
+          >
+            {/* Indicador / alça arrastável do painel — pad 12/0/24/0 */}
+            <View
+              {...handleDragResponder.panHandlers}
+              className="items-center pb-6 pt-3"
+              style={{ cursor: "grab" }}
+            >
+              <View className="h-[5px] w-9 rounded-full bg-[#D9D9D3]" />
+            </View>
+
+            {/* Conteúdo do painel com altura fixa (325px) para manter o modal exatamente na mesma altura nas duas etapas */}
+            <View className="px-5" style={{ height: 325, justifyContent: "space-between" }}>
+              {copySheetStep === "review" ? (
+                <>
+                  {/* Apresentação — gap 12 */}
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-11 w-11 items-center justify-center rounded-[12px] bg-[#FFF4E8]">
+                      <ExportDataSheetIcon />
+                    </View>
+                    <Text className="flex-1 font-inter-bold text-[22px] leading-[28px] text-[#1F1F1F]">
+                      Solicitar cópia dos dados
+                    </Text>
+                  </View>
+
+                  {/* Explicação */}
+                  <View>
+                    <Text className="font-sans text-[14px] leading-[21px] text-[#555555]">
+                      Vamos solicitar uma cópia dos dados vinculados à sua conta. Ela será enviada ao seu e-mail verificado.
+                    </Text>
+                  </View>
+
+                  {/* Destino da cópia — somente leitura — r=14, fill #FAFAF8, border #E8E8E0, pad 16, gap 12 */}
+                  <View className="flex-row items-center gap-3 rounded-[14px] border border-[#E8E8E0] bg-[#FAFAF8] p-4">
+                    <MailEnvelopeIcon />
+                    <View className="flex-1 gap-1.5">
+                      <Text className="font-sans text-[12px] leading-[15px] text-[#555555]">
+                        E-mail verificado
+                      </Text>
+                      <Text className="font-inter-semibold text-[16px] leading-[22px] text-[#1F1F1F]">
+                        {verifiedEmail}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Orientação para alterar e-mail */}
+                  <View>
+                    <Text className="font-sans text-[13px] leading-[20px] text-[#555555]">
+                      {"Para usar outro e-mail, altere o endereço em "}
+                      <Text
+                        className="font-inter-semibold text-[#1F1F1F]"
+                        onPress={() => {
+                          closeCopySheet(() => navigation.navigate("PersonalData"));
+                        }}
+                      >
+                        Dados pessoais
+                      </Text>
+                      {" e verifique o novo e-mail."}
+                    </Text>
+                  </View>
+
+                  {/* Ações da solicitação — h=54, gap 12 */}
+                  <View className="flex-row items-center gap-3">
+                    <Pressable
+                      accessibilityRole="button"
+                      className="h-[54px] w-[112px] items-center justify-center rounded-[12px] border border-[#E8E8E0] bg-white active:opacity-80"
+                      onPress={() => closeCopySheet()}
+                    >
+                      <Text className="font-inter-semibold text-[15px] leading-[18px] text-[#1F1F1F]">
+                        Cancelar
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      accessibilityRole="button"
+                      className="h-[54px] flex-1 items-center justify-center rounded-[12px] bg-[#F26900] active:opacity-90"
+                      onPress={handleConfirmCopyRequest}
+                    >
+                      <Text className="font-inter-bold text-[16px] leading-[19px] text-white">
+                        Solicitar cópia
+                      </Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : (
+                /* Etapa 2: Solicitação recebida (Figma 2100:537 encaixada proporcionalmente em 325px) */
+                <>
+                  {/* Símbolo de sucesso proporcional */}
+                  <View className="items-center">
+                    <View
+                      className="items-center justify-center rounded-full bg-[#FFF4E8]"
+                      style={{ width: 66, height: 66 }}
+                    >
+                      <SuccessCheckCircleIcon />
+                    </View>
+                  </View>
+
+                  {/* Mensagem de sucesso */}
+                  <View className="items-center gap-1.5">
+                    <Text className="text-center font-inter-extrabold text-[24px] leading-[28px] text-[#1F1F1F]">
+                      Solicitação recebida
+                    </Text>
+                    <Text className="text-center font-sans text-[13px] leading-[19px] text-[#555555]">
+                      Recebemos sua solicitação de cópia dos dados. A cópia será preparada e enviada ao seu e-mail verificado.
+                    </Text>
+                  </View>
+
+                  {/* Destino da cópia — r=14, border #E8E8E0, bg #FFFFFF */}
+                  <View className="flex-row items-center gap-3 rounded-[14px] border border-[#E8E8E0] bg-white px-4 py-3">
+                    <MailEnvelopeIcon />
+                    <View className="flex-1 gap-1">
+                      <Text className="font-sans text-[12px] leading-[16px] text-[#555555]">
+                        E-mail verificado
+                      </Text>
+                      <Text className="font-inter-semibold text-[14px] leading-[18px] text-[#1F1F1F]">
+                        {verifiedEmail}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Botão OK — h=54, fill #F26900 */}
+                  <Pressable
+                    accessibilityRole="button"
+                    className="h-[54px] w-full items-center justify-center rounded-[12px] bg-[#F26900] active:opacity-90"
+                    onPress={() => closeCopySheet()}
+                  >
+                    <Text className="font-inter-bold text-[16px] leading-[19px] text-white">
+                      OK
+                    </Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
