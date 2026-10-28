@@ -14,218 +14,152 @@ O **Ach.ai** é uma plataforma de navegação indoor e descoberta de produtos pa
         ┌─────────────────────┘           │            └─────────────────────┐
         ▼                                 ▼                                  ▼
 ┌──────────────────────┐       ┌──────────────────────┐           ┌──────────────────────┐
-│    src/frontend      │       │      src/mobile      │           │   WebApp (QR Code)   │
-│   (Dashboard B2B)    │       │  (App Consumidor)    │           │ (Sessão Temporária)  │
+│    src/frontend      │       │      src/mobile      │           │      src/webapp      │
+│   (Dashboard B2B)    │       │  (App Consumidor)    │           │  (WebApp QR Code)    │
+│   http://...:5173    │       │   http://...:8081    │           │   http://...:5174    │
 ├──────────────────────┤       ├──────────────────────┤           ├──────────────────────┤
-│ • Portal das lojas   │       │ • Expo / React Native│           │ • Acesso instantâneo │
-│ • Login corporativo  │       │ • Login / Cadastro   │           │   ao ler QR na loja  │
-│ • Gestão completa do │       │ • Mapa de mercados   │           │ • SEM cadastro/login │
-│   catálogo da filial │       │ • Listas salvas (DB) │           │ • Busca no catálogo  │
-│ • Mapa/corredores    │       │ • Rota indoor + QR   │           │ • Lista na sessão    │
-│   e estoque          │       │ • Perfil completo    │           │ • Rota indoor guiada │
+│ • Portal das lojas   │       │ • Expo / React Native│           │ • React 19 + Vite    │
+│ • Login corporativo  │       │ • Login / Cadastro   │           │ • Acesso instantâneo │
+│ • Gestão completa do │       │ • Mapa de mercados   │           │   ao ler QR na loja  │
+│   catálogo da filial │       │ • Listas salvas (DB) │           │ • SEM cadastro/login │
+│ • Mapa/corredores    │       │ • Rota indoor + QR   │           │ • Rota indoor guiada │
+│   e estoque          │       │ • Perfil completo    │           │ • Conversão pro App  │
 └──────────────────────┘       └──────────────────────┘           └──────────────────────┘
 ```
 
-1. **Backend (`src/backend`)**:
-   - Node.js 20 (`node:http`) + PostgreSQL 16 com PostGIS (rodando via Docker na porta `3000`, banco na porta `5433`).
-   - Serve dados de lojas (`filial`), catálogo de produtos (`produto`), grafo de navegação indoor (`no`, `aresta`), listas de compras (`shopping_list`, `shopping_list_item`) e cálculo de menor caminho (`Dijkstra` em `route-model.js`).
-2. **Dashboard B2B (`src/frontend`)**:
+1. **Backend (`src/backend` — Porta `3000`)**:
+   - Node.js 20 (`node:http`) + PostgreSQL 16 com PostGIS (rodando via Docker na porta `3000`, banco na porta `5432`/`5433`).
+   - Serve dados de lojas (`filial`), catálogo de produtos (`produto`), grafo de navegação indoor (`no_grafo`, `aresta`), listas de compras (`shopping_list`, `shopping_list_item`) e cálculo de menor caminho (`Dijkstra` + *Nearest-Neighbor* em `route-model.js`).
+2. **Dashboard B2B (`src/frontend` — Porta `5173`)**:
    - Aplicação Web (React + Vite) voltada para os **supermercados parceiros** (`admin` / `manager`).
-   - Onde a loja faz login corporativo (`LoginSupermercado.jsx`) e gerencia todo o seu catálogo, preços, estoque, corredores e mapa da unidade.
-3. **App Mobile do Consumidor (`src/mobile`)**:
+   - Onde a loja faz login corporativo (`LoginSupermercado.jsx`) e gerencia catálogo, preços, estoque, corredores e mapa da unidade.
+3. **App Mobile do Consumidor (`src/mobile` — Porta `8081`)**:
    - Aplicativo React Native (Expo SDK 52 + NativeWind v4) para o consumidor recorrente que possui conta no Ach.ai.
    - Permite buscar supermercados próximos em mapa real (OpenStreetMap + Leaflet + GPS via `expo-location`), ver detalhes da unidade, criar/salvar/excluir múltiplas listas sincronizadas no banco, escanear QR Code e gerenciar perfil.
-4. **WebApp do Consumidor via QR Code (`WebApp` — Foco da Próxima Etapa)**:
-   - Experiência web mobile-first (`390x844`) acessada imediatamente quando o cliente escaneia o QR Code físico na entrada do supermercado usando a câmera do celular, **sem precisar instalar aplicativo e sem cadastro** (*"Sem cadastro. Sua sessão é temporária."*).
+4. **WebApp do Consumidor via QR Code (`src/webapp` — Porta `5174`)**:
+   - Aplicação Web dedicada (React 19 + Vite) mobile-first (`390x844`) acessada imediatamente quando o cliente escaneia o QR Code físico na entrada do supermercado usando a câmera do celular, **sem precisar instalar aplicativo e sem cadastro** (*"Sem cadastro. Sua sessão é temporária."*).
 
 ---
 
-## 2. Estado Atual do Repositório (Branch `mobile` — Commit `d306df5`)
+## 2. Estado Atual do Repositório (Branch `webapp`)
 
-### O que já está pronto no Backend (`src/backend`)
-- **Migrations (`001` a `009`)**:
-  - `001_initial_schema.sql`: tabelas `filial`, `no`, `aresta`, `produto` com suporte PostGIS, `unaccent` e `pg_trgm`.
+### 2.1. O que já está pronto no Backend (`src/backend`)
+- **Migrations (`001` a `010`)**:
+  - `001_initial_schema.sql`: tabelas `filial`, `qr_code`, `no_grafo`, `aresta`, `produto` com suporte PostGIS, `unaccent` e `pg_trgm`.
   - `002` a `005`: autenticação (`admin_user`, roles `admin`/`manager`, recuperação de senha com token hash).
-  - `006` e `007`: loja demo (`00000000-0000-0000-0000-000000000001` — Mercado Aurora / Mercado Liberdade), grafo de nós/arestas e produtos com corredores/prateleiras.
-  - `008` e `009`: tabelas `shopping_list` e `shopping_list_item`.
+  - `006` e `007`: lojas demo (`00000000-0000-0000-0000-000000000001` — `Mercado Aurora` e `11111111-1111-1111-1111-111111111111` — `Mercado Aurora - Centro`) e catálogo inicial.
+  - `008` e `009`: tabelas `shopping_list` e `shopping_list_item` com status `confirmed`.
+  - `010_webapp_store_graph.sql`: popula os nós do grafo indoor (`Entrada Principal`, `Corredor 1`, `Corredor 2`, `Corredor 3`, `Hortifruti`, `Caixas`), arestas bidirecionais (`aresta`) e vincula todos os produtos do `Mercado Aurora` aos seus respectivos corredores, prateleiras e `no_id`.
 - **Rotas implementadas em `src/backend/src/router.js`**:
-  - `GET /health`
-  - `POST /auth/login`, `POST /auth/register`, `POST /auth/forgot-password`, `POST /auth/reset-password`
-  - `POST /admin/register`
-  - `GET /suggestions?storeId=<uuid>`
-  - `GET /stores/:storeId` (dados da unidade)
-  - `GET /stores/:storeId/products?q=<texto>&limit=<n>` (catálogo da unidade)
-  - `GET /catalog?storeId=<uuid>&search=<texto>` (alias legado)
-  - `GET /lists` (lista todas as listas salvas do usuário autenticado com `items`)
-  - `POST /stores/:storeId/lists` (cria lista)
-  - `GET /lists/:listId` (resumo da lista)
-  - `DELETE /lists/:listId` (remove lista e seus itens via `CASCADE`)
-  - `POST /lists/:listId/items`, `PATCH /lists/:listId/items/:productId`, `DELETE /lists/:listId/items/:productId`
-  - `POST /lists/:listId/route` (calcula rota indoor otimizada no grafo da loja)
-- **CORS (`src/backend/src/middlewares/cors.js`)**:
-  - Já configurado com `Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS`.
-
-### O que já está pronto no Mobile (`src/mobile`)
-Todas as telas abaixo já foram criadas seguindo fielmente o Figma e estão registradas em `src/mobile/App.jsx`:
-- **Autenticação**: `LoginScreen`, `RegisterScreen`, `ForgotPasswordScreen`, `ForgotPasswordConfirmationScreen`, `ResetPasswordScreen`.
-- **Abas Principais (com `BottomNavigation` de 4 abas: `Início`, `Buscar`, `Listas`, `Perfil` e headers padronizados)**:
-  - `HomeScreen.jsx` (`Início`)
-  - `CatalogScreen.jsx` (`Buscar supermercados` — Figma `2088:749`, com mapa interativo real OpenStreetMap + Leaflet em `InteractiveStoreMap.jsx`, GPS via `expo-location`, geocodificação Nominatim e busca de mercados via Overpass API)
-  - `MyListsScreen.jsx` (`Minhas listas` — Figma `2063:222`, integrada ao backend via `GET /lists` e `DELETE /lists/:id`)
-  - `ProfileScreen.jsx` (`Meu perfil` — Figma `2063:254`)
-- **Fluxo de Loja, Lista, QR e Rota**:
-  - `StoreDetailsScreen.jsx` (`Detalhes do Mercado Liberdade` — Figma `2102:1157`)
-  - `CreateListScreen.jsx` (`Criar nova lista` — Figma `2102:722`, com carrossel horizontal de 10 categorias e integração com backend)
-  - `QrScannerScreen.jsx` (`Leitor de QR Code`)
-  - `RouteScreen.jsx` (`Rota indoor otimizada`)
-- **Subtelas de Perfil**:
-  - `PersonalDataScreen.jsx` (`2088:1278`)
-  - `PreferencesScreen.jsx` (`2088:1594`)
-  - `PrivacyScreen.jsx` (`2088:1959`)
-  - `PrivacyPolicyScreen.jsx` (`2096:310`)
-  - `SecurityScreen.jsx` (`2088:2229`)
-  - `HelpScreen.jsx` (`2088:2533`)
-  - `ContactTeamScreen.jsx` (`2096:3`)
-  - `ContactSuccessScreen.jsx` (`2098:41`)
+  - **Públicas (usadas pelo `src/webapp` via QR Code e pelo Mobile)**:
+    - `GET /health`
+    - `GET /stores/:storeId` (dados da unidade)
+    - `GET /stores/:storeId/products?q=<texto>&limit=<n>` (catálogo da unidade com busca por trigramas e `unaccent`)
+    - `POST /stores/:storeId/route` (recebe `{ items: [{ productId, quantity }], startAisle?, startNodeId? }` e retorna a rota indoor ordenada pelo menor caminho via *Nearest-Neighbor + Dijkstra* + metadados do grafo `entrance`, `checkout`, `nodes`)
+  - **Autenticação**:
+    - `POST /auth/login`, `POST /auth/register`, `POST /auth/forgot-password`, `POST /auth/reset-password`
+  - **Protegidas por JWT (`requireRole`)**:
+    - `POST /admin/register`
+    - `GET /suggestions?storeId=<uuid>`
+    - `GET /catalog?storeId=<uuid>&search=<texto>`
+    - `GET /lists`, `POST /stores/:storeId/lists`, `GET /lists/:listId`, `DELETE /lists/:listId`
+    - `POST /lists/:listId/items`, `PATCH /lists/:listId/items/:productId`, `DELETE /lists/:listId/items/:productId`
+    - `POST /lists/:listId/route`
+- **CORS (`src/backend/src/app.js` e `docker-compose.yml`)**:
+  - Permite `http://localhost:5173,http://localhost:5174,http://localhost:8081` com `GET, POST, PATCH, DELETE, OPTIONS`.
+- **Testes Automatizados (`npm --prefix src/backend test`)**:
+  - 27 testes unitários e de integração passando (`auth.test.js`, `catalog.test.js`, `migrate.test.js`, `shopping-list.test.js`).
 
 ---
 
-## 3. Escopo do Novo Chat: Desenvolvimento do WebApp (Consumidor via QR Code)
+### 2.2. O que já está pronto no WebApp (`src/webapp`)
+Aplicação independente em `src/webapp` rodando na porta `5174` com proxy Vite configurado para `/stores`, `/auth`, `/lists` e `/health` (`http://localhost:3000`), além de fallback offline automático em `src/webapp/src/services/webapp-api.js`.
 
-O próximo escopo é construir o **WebApp do Consumidor** baseado nas **4 telas do Figma** (arquivo `IrxLRT7xxR4HuImDxYvHjr`).
+#### Estrutura de Arquivos de `src/webapp`:
+- `src/webapp/package.json` e `src/webapp/vite.config.js`
+- `src/webapp/index.html` (Fontes Google `Rubik` e `Inter`)
+- `src/webapp/src/App.jsx` (Gerencia estado da sessão em `sessionStorage`, leitura de `?storeId=...` e `?screen=entry|search|list|route|completed`)
+- `src/webapp/src/services/webapp-api.js` (Integração com `GET /stores/:storeId`, `GET /stores/:storeId/products`, `POST /stores/:storeId/route`, e cadastro rápido `registerAndSaveSessionList` que cria conta e persiste a lista da sessão temporária no banco)
+- `src/webapp/src/components/StoreHeader.jsx` (Header com marca `"Ach.ai"` + pílula `"⌖  Mercado Aurora"`)
+- `src/webapp/src/components/BottomNav.jsx` (Navegação inferior de 3 abas do WebApp: `Início`, `Buscar`, `Minha lista`)
+- `src/webapp/src/styles/webapp.css` (Estilização fiel ao Figma `390x844`)
 
-### Diferença Conceitual Importante (App Mobile vs. WebApp)
-- No **WebApp**, o usuário **não faz login** (*"Sem cadastro. Sua sessão é temporária."*).
-- Ele entra no WebApp ao ler o QR Code na porta do supermercado (ex.: `/webapp?storeId=00000000-0000-0000-0000-000000000001`).
-- A lista de compras do WebApp pode ser mantida em `sessionStorage`/`localStorage` (ou sessão anônima) e a navegação inferior tem **apenas 3 abas**: `Início`, `Buscar` e `Minha lista` (não existe aba `Perfil`).
-
-### Especificação das 4 Telas do WebApp no Figma
-
-#### Tela 1 — `01 — Entrada via QR Code` (Node `2063:2`)
-- **Link**: `https://www.figma.com/design/IrxLRT7xxR4HuImDxYvHjr/Ach.ai-telas?node-id=2063-2`
-- **Dimensões base**: `390x844`
-- **Estrutura e Conteúdo**:
-  - **Hero (`2063:3`)**:
-    - Marca: `"Ach.ai"`
-    - Eyebrow: `"SUA COMPRA, MAIS INTELIGENTE"`
-    - Headline: `"Encontre tudo. Sem perder tempo."`
-    - Subheadline: `"Sua rota de compras começa aqui."`
-  - **Card de Identificação da Loja (`2063:8`)**:
-    - Eyebrow: `"VOCÊ ESTÁ EM"`
-    - Nome da loja: `"Mercado Aurora"` (carregado via `storeId` do QR Code)
-    - Badge de confirmação QR (`2063:11`): `"✓"`
-  - **Seção `"Como funciona"` (`2063:13`)**:
-    - Passo `1` (`2063:14`): `"Monte sua lista"` — `"Busque os produtos que precisa."`
-    - Passo `2` (`2063:18`): `"Receba sua rota"` — `"Encontre o caminho mais eficiente."`
-    - Passo `3` (`2063:22`): `"Acompanhe a compra"` — `"Marque os itens conforme coleta."`
-  - **CTA Principal (`2063:26`)**:
-    - Botão: `"Começar minha compra  →"` (navega para a Tela 2 — Busca de produtos)
-    - Rodapé de privacidade (`2063:28`): `"Sem cadastro. Sua sessão é temporária."`
-
-#### Tela 2 — `02 — Busca de produtos` (Node `2063:29`)
-- **Link**: `https://www.figma.com/design/IrxLRT7xxR4HuImDxYvHjr/Ach.ai-telas?node-id=2063-29`
-- **Dimensões base**: `390x844`
-- **Estrutura e Conteúdo**:
-  - **Topo**:
-    - Marca `"Ach.ai"` + Pílula da loja (`2063:31`): `"⌖  Mercado Aurora"`
-    - Saudação (`2063:33`): `"O que você precisa hoje?"`
-    - Campo de busca (`2063:34`): ícone `"⌕"` + placeholder `"Buscar produto ou marca"`
-  - **Categorias (`2063:37`)**:
-    - `"Hortifruti"` (`🥬`), `"Laticínios"` (`🥛`), `"Padaria"` (`🍞`), `"Limpeza"` (`🧼`)
-  - **Mais buscados (`2063:50`)**:
-    - Cards horizontais de produtos vindos do catálogo da loja:
-      1. `"Leite integral 1 L"` — `"Laticínios · Corredor 3"` — `"R$ 5,49"` + botão `"+"`
-      2. `"Banana prata"` — `"Hortifruti · Setor A"` — `"R$ 6,99/kg"` + botão `"+"`
-      3. `"Pão de forma"` — `"Padaria · Corredor 1"` — `"R$ 8,90"` + botão `"+"`
-  - **Barra Flutuante da Lista (`2063:75`)**:
-    - `"Ver minha lista  ·  3 itens  →"` (navega para a Tela 3)
-  - **Bottom Navigation de 3 abas (`2063:77`)**:
-    - `Início` (`⌂`), `Buscar` (`⌕` — ativa), `Minha lista` (`☷`)
-
-#### Tela 3 — `03 — Lista de compras` (Node `2063:84`)
-- **Link**: `https://www.figma.com/design/IrxLRT7xxR4HuImDxYvHjr/Ach.ai-telas?node-id=2063-84`
-- **Dimensões base**: `390x844`
-- **Estrutura e Conteúdo**:
-  - **Topo**:
-    - Marca `"Ach.ai"` + Pílula `"⌖  Mercado Aurora"`
-    - Título (`2063:88`): `"Minha lista"`
-    - Subtítulo (`2063:89`): `"3 produtos adicionados"`
-  - **Itens da Lista**:
-    - Card 1 (`2063:90`): Checkbox `"✓"` + `"Leite integral 1 L"` + `"Corredor 3"` + `"1 un."`
-    - Card 2 (`2063:96`): Checkbox `"✓"` + `"Banana prata"` + `"Hortifruti"` + `"1 kg"`
-    - Card 3 (`2063:102`): Checkbox `"✓"` + `"Pão de forma"` + `"Corredor 1"` + `"1 un."`
-  - **Botão Secundário (`2063:108`)**:
-    - `"+  Adicionar mais produtos"` (volta para a Tela 2)
-  - **Card de Resumo de Rota (`2063:110`)**:
-    - Título: `"Sua rota está quase pronta"`
-    - Detalhe: `"3 itens · percurso otimizado"`
-  - **CTA Principal (`2063:113`)**:
-    - `"Gerar rota otimizada  →"` (navega para a Tela 4)
-  - **Bottom Navigation de 3 abas (`2063:115`)**:
-    - `Início` (`⌂`), `Buscar` (`⌕`), `Minha lista` (`☷` — ativa)
-
-#### Tela 4 — `04 — Rota otimizada` (Node `2063:122`)
-- **Link**: `https://www.figma.com/design/IrxLRT7xxR4HuImDxYvHjr/Ach.ai-telas?node-id=2063-122`
-- **Dimensões base**: `390x844`
-- **Estrutura e Conteúdo**:
-  - **Topo**:
-    - Marca `"Ach.ai"` + Pílula `"⌖  Mercado Aurora"`
-    - Título (`2063:126`): `"Sua rota de compra"`
-    - Subtítulo (`2063:127`): `"Mercado Aurora · 3 paradas"`
-  - **Mapa Indoor da Loja (`2063:128`)**:
-    - Corredores (`CORREDOR 1`, `CORREDOR 2`, `CORREDOR 3`, `HORTI`)
-    - Traçado da rota (`Route segment vertical`, `horizontal`, `last`)
-    - Paradas numeradas: `Stop 1` (`1`), `Stop 2` (`2`), `Stop 3` (`3`)
-  - **Card da Parada Atual (`2063:146`)**:
-    - Eyebrow (`2063:147`): `"PRÓXIMO PRODUTO · 1 DE 3"`
-    - Produto (`2063:148`): `"Leite integral 1 L"`
-    - Localização (`2063:149`): `"Corredor 3 · Prateleira central"`
-    - Botão principal (`2063:150`): `"Marcar como coletado"`
-    - Link secundário (`2063:152`): `"Não encontrei"`
-  - **Barra de Progresso (`2063:153`)**:
-    - Barra de preenchimento + texto `"1 de 3 itens coletados"`
+#### As 5 Telas Implementadas em `src/webapp/src/screens/`:
+1. **`QrEntryScreen.jsx` (`01 — Entrada via QR Code` — Figma `2063:2`)**:
+   - Hero laranja (`#F26900`) com `"Ach.ai"`, `"SUA COMPRA, MAIS INTELIGENTE"`, `"Encontre tudo. Sem perder tempo."`.
+   - Card de identificação da loja (`"VOCÊ ESTÁ EM"` → `"Mercado Aurora"` com check `"✓"`).
+   - Seção `"Como funciona"` (passos `1`, `2`, `3`).
+   - Botão `"Começar minha compra  →"` e aviso `"Sem cadastro. Sua sessão é temporária."`.
+2. **`ProductSearchScreen.jsx` (`02 — Busca de produtos` — Figma `2063:29`)**:
+   - Busca em tempo real no catálogo da loja (`GET /stores/:storeId/products`).
+   - Filtro interativo pelas 4 categorias (`Hortifruti` `🥬`, `Laticínios` `🥛`, `Padaria` `🍞`, `Limpeza` `🧼`).
+   - Cards de produtos (`"Mais buscados"` / resultados) com corredor, preço formatado e botão `"+"` para adicionar à lista da sessão.
+   - CTA `"Ver minha lista  ·  X itens  →"` e Bottom Navigation de 3 abas.
+3. **`ShoppingListScreen.jsx` (`03 — Lista de compras` — Figma `2063:84`)**:
+   - Lista de itens adicionados na sessão com checkbox `"✓"`, corredor/setor e ajuste de quantidade (`1 un.`, `1 kg`).
+   - Botão `"+  Adicionar mais produtos"`, card `"Sua rota está quase pronta"` e CTA `"Gerar rota otimizada  →"`.
+4. **`OptimizedRouteScreen.jsx` (`04 — Rota otimizada` — Figma `2063:122`)**:
+   - **Mapa Indoor Interativo (`350x355`)**:
+     - 4 colunas de corredores (`CORREDOR 1`, `CORREDOR 2`, `CORREDOR 3`, `HORTI`).
+     - **Traçado ortogonal dinâmico em SVG** (`buildOrthogonalPolylinePoints`) conectando os corredores dos itens presentes na lista do usuário.
+     - **Pins numerados das paradas (`1`, `2`, `3`...)** que viram `"✓"` conforme os produtos são coletados.
+     - **Indicador de posição `"• VOCÊ"`** que acompanha a parada ativa do consumidor entre a `ENTRADA (QR)` e o `CAIXA`.
+     - **Reposicionamento por toque no corredor**: tocar em qualquer corredor no mapa ancora a posição atual do usuário naquele corredor (`startAisle`) e recalcula a rota otimizada a partir dali.
+   - Card da parada atual (`"PRÓXIMO PRODUTO · X DE Y"`, `"Marcar como coletado"`, `"Não encontrei"`) e barra de progresso (`"X de Y itens coletados"`).
+5. **`PurchaseCompletedScreen.jsx` (`05 — Compra concluída e Conversão para o App`)**:
+   - Exibida automaticamente ao concluir a coleta do último item da rota.
+   - Confirma a conclusão da compra (`"Tudo no carrinho. Siga para o caixa!"`) e apresenta os 3 benefícios de criar conta no App Ach.ai.
+   - Possui modal (*bottom sheet*) integrado ao backend (`POST /auth/register` + `POST /auth/login` + `POST /stores/:storeId/lists`) que permite criar a conta em segundos e **salvar automaticamente a lista da sessão temporária no banco de dados**, ou abrir diretamente o App Mobile.
 
 ---
 
-## 4. Pontos de Atenção para o Backend ao Integrar o WebApp
+## 3. Próximas Melhorias Sugeridas para o WebApp (Foco para Continuar com Outras IAs)
 
-1. **Acesso Público / Sessão Temporária no Backend (`src/backend/src/router.js`)**:
-   - Atualmente, `GET /stores/:storeId`, `GET /stores/:storeId/products` e o cálculo de rota exigem `requireRole(..., ["admin", "manager"])` (Bearer JWT).
-   - Para que o **WebApp sem cadastro** funcione de ponta a ponta consumindo o backend real:
-     - Permitir leitura pública (ou criar endpoints públicos/de sessão temporária) para consultar dados da loja (`GET /stores/:storeId`), produtos da loja (`GET /stores/:storeId/products`) e calcular rota a partir de uma lista de `productIds` em memória (`POST /stores/:storeId/route` recebendo `{ items: [{ productId, quantity }] }`), **sem exigir login**, mantendo as rotas administrativas protegidas para o Dashboard B2B.
-   - Verificar `CORS_ORIGIN` no `docker-compose.yml` / `src/backend/src/app.js` caso o WebApp rode em uma porta diferente (ex.: `http://localhost:5173` do Vite já está permitido por padrão no backend, além de `http://localhost:8081`).
+1. **Tratamento de Itens `"Não encontrei"` e Sugestão de Substitutos**:
+   - Na `OptimizedRouteScreen.jsx`, quando o usuário clica em `"Não encontrei"`, além de avançar para o próximo item, exibir um alerta/opção rápida sugerindo produtos equivalentes da mesma categoria naquela loja (consumindo `GET /stores/:storeId/products?q=<categoria>`) ou listar os itens não encontrados na `PurchaseCompletedScreen.jsx`.
+2. **Controles de Quantidade (`-` / `+`) e Exclusão Individual na `ShoppingListScreen.jsx`**:
+   - Permitir incrementar/decrementar a quantidade com botões `-` e `+` explícitos ou deslizar/clicar para remover um item específico sem precisar apenas ciclar a quantidade.
+3. **Compartilhamento / Exportação de QR Code da Lista**:
+   - Permitir gerar um link compartilhável ou QR Code da lista montada no WebApp para abrir direto no App Mobile (`src/mobile`).
+4. **Animação Suave de Transição no Mapa Indoor e Destaque de Prateleira**:
+   - Adicionar indicação visual da altura da prateleira (*Superior*, *Central*, *Inferior*, *Balcão refrigerado*) no card da parada atual em `OptimizedRouteScreen.jsx` e destacar no mapa o caminho final até o `CAIXA` quando faltar o último item.
+5. **Testes Automatizados para o `src/webapp`**:
+   - Adicionar testes unitários/componentes para o cálculo de coordenadas do mapa e fluxo de sessão do `src/webapp`.
 
-2. **Como Inspecionar os Nós do Figma Rapidamente**:
-   - O token da API do Figma está configurado em `C:/Users/Leo/.gemini/config/mcp_config.json` (`mcpServers.figma.env.FIGMA_API_KEY`).
-   - O `fileKey` do projeto no Figma é `IrxLRT7xxR4HuImDxYvHjr`.
-   - Basta consultar `https://api.figma.com/v1/files/IrxLRT7xxR4HuImDxYvHjr/nodes?ids=2063:2,2063:29,2063:84,2063:122` e `https://api.figma.com/v1/images/IrxLRT7xxR4HuImDxYvHjr?ids=...&format=png&scale=2` para obter cores exatas, tipografia, paddings e imagens de referência.
+---
 
-3. **Regras Gerais do Repositório**:
-   - **Nunca editar migrations SQL já aplicadas** (`001` a `009`); se precisar alterar o schema, criar `010_*.sql`.
-   - Preservar o arquivo `src/mobile/Venha para a FECAP!.txt`.
-   - Validar sempre com `cd src/backend && npm test` e `git diff --check`.
+## 4. Referências do Figma e Regras Gerais
+
+- **Figma**:
+  - O token da API do Figma está em `C:/Users/Leo/.gemini/config/mcp_config.json` (`mcpServers.figma.env.FIGMA_API_KEY`).
+  - `fileKey`: `IrxLRT7xxR4HuImDxYvHjr`
+  - Nós do WebApp: `2063:2` (Entrada QR), `2063:29` (Busca), `2063:84` (Minha Lista), `2063:122` (Rota Otimizada).
+- **Regras do Repositório**:
+  - **Nunca editar migrations SQL já aplicadas** (`001` a `010`); se precisar alterar o schema ou dados, criar `011_*.sql`.
+  - Preservar o arquivo `src/mobile/Venha para a FECAP!.txt`.
+  - Validar sempre com `npm --prefix src/backend test`, `cd src/webapp && npm run build` e `git diff --check`.
 
 ---
 
 ## 5. Comandos Úteis
 
 ```powershell
-# Subir ou atualizar Banco (PostGIS :5433) + API (:3000) via Docker
+# Subir ou atualizar Banco (PostGIS) + API (:3000) via Docker
 docker compose up -d --build
 
-# Rodar testes do Backend
-cd src/backend
-npm test
-
-# Rodar Frontend Web / Dashboard B2B (Vite :5173)
-cd src/frontend
-npm run dev
+# Rodar testes do Backend (27 testes)
+npm --prefix src/backend test
 
 # Rodar WebApp (Consumidor via QR Code — Vite :5174)
 cd src/webapp
 npm run dev
+# Acesse: http://localhost:5174/?storeId=00000000-0000-0000-0000-000000000001
 
-# Rodar App Mobile (Expo :8081)
+# Rodar Dashboard B2B (Supermercados — Vite :5173)
+cd src/frontend
+npm run dev
+
+# Rodar App Mobile (Consumidor com conta — Expo :8081)
 cd src/mobile
 npx expo start --web
 ```
