@@ -334,30 +334,77 @@ export async function fetchStoreProducts(storeId = DEFAULT_STORE_ID, query = "")
   }
 }
 
-export function buildLocalFallbackRoute(store, listItems) {
-  const stops = listItems.map((item) => {
+const AISLE_INDEX_MAP = {
+  "corredor 1": 0,
+  "corredor 2": 1,
+  "corredor 3": 2,
+  "hortifruti": 3,
+  "setor a": 3,
+  "horti": 3,
+};
+
+export function getAisleColumnIndex(aisleName = "") {
+  const normalized = String(aisleName || "").toLowerCase().trim();
+  for (const [key, idx] of Object.entries(AISLE_INDEX_MAP)) {
+    if (normalized.includes(key)) return idx;
+  }
+  return 0;
+}
+
+export function buildLocalFallbackRoute(store, listItems, options = {}) {
+  const rawStops = listItems.map((item) => {
     const loc = inferProductLocation(item);
+    const aisleLabel = loc.aisle === "Setor A" ? "Hortifruti" : loc.aisle;
     return {
       productId: item.id,
       name: item.name,
       category: item.category,
       quantity: item.quantity || 1,
-      aisle: loc.aisle === "Setor A" ? "Hortifruti" : loc.aisle,
+      aisle: aisleLabel,
       shelf: loc.shelf || "Prateleira central",
+      colIndex: getAisleColumnIndex(aisleLabel),
     };
   });
 
+  // Greedy nearest-neighbor ordering starting from entrance (col 0) or options.startAisle
+  const remaining = [...rawStops];
+  const orderedStops = [];
+  let currentCol = options?.startAisle ? getAisleColumnIndex(options.startAisle) : 0;
+  let totalDistance = 0;
+
+  while (remaining.length > 0) {
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < remaining.length; i += 1) {
+      const dist = Math.abs(remaining[i].colIndex - currentCol) * 6 + 4;
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    }
+    const [chosen] = remaining.splice(bestIdx, 1);
+    totalDistance += bestDist;
+    currentCol = chosen.colIndex;
+    orderedStops.push({
+      ...chosen,
+      distance: bestDist,
+    });
+  }
+
   return {
     store: store || FALLBACK_STORE,
-    stops,
+    anchorNode: options?.startAisle
+      ? { name: options.startAisle, type: "corredor" }
+      : { name: "Entrada Principal", type: "entrada" },
+    stops: orderedStops,
     unlocatedItems: [],
-    totalDistance: stops.length * 8.5,
+    totalDistance,
     hasLocationWarning: false,
     locationWarning: null,
   };
 }
 
-export async function generateOptimizedRoute(storeId, store, listItems) {
+export async function generateOptimizedRoute(storeId, store, listItems, options = {}) {
   try {
     const response = await fetch(`${API_BASE_URL}/stores/${encodeURIComponent(storeId)}/route`, {
       method: "POST",
@@ -367,6 +414,8 @@ export async function generateOptimizedRoute(storeId, store, listItems) {
           productId: item.id,
           quantity: item.quantity || 1,
         })),
+        startAisle: options?.startAisle || undefined,
+        startNodeId: options?.startNodeId || undefined,
       }),
     });
     if (!response.ok) throw new Error("Route request failed");
@@ -374,8 +423,72 @@ export async function generateOptimizedRoute(storeId, store, listItems) {
     if (data?.route?.stops?.length) {
       return data.route;
     }
-    return buildLocalFallbackRoute(store, listItems);
+    return buildLocalFallbackRoute(store, listItems, options);
   } catch {
-    return buildLocalFallbackRoute(store, listItems);
+    return buildLocalFallbackRoute(store, listItems, options);
   }
+}
+
+export async function registerAndSaveSessionList({
+  name,
+  email,
+  password,
+  storeId = DEFAULT_STORE_ID,
+  storeName = FALLBACK_STORE.name,
+  listItems = [],
+}) {
+  const registerRes = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      password_confirmation: password,
+    }),
+  });
+
+  if (!registerRes.ok) {
+    const errBody = await registerRes.json().catch(() => ({}));
+    throw new Error(errBody.error || "Não foi possível criar a conta.");
+  }
+
+  const loginRes = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!loginRes.ok) {
+    return { registered: true, savedList: false };
+  }
+
+  const { token } = await loginRes.json();
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
+  const listRes = await fetch(`${API_BASE_URL}/stores/${encodeURIComponent(storeId)}/lists`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ name: `Compra QR · ${storeName}` }),
+  });
+
+  if (listRes.ok) {
+    const { list } = await listRes.json();
+    for (const item of listItems) {
+      await fetch(`${API_BASE_URL}/lists/${encodeURIComponent(list.id)}/items`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          productId: item.id,
+          quantity: item.quantity || 1,
+        }),
+      }).catch(() => {});
+    }
+    return { registered: true, savedList: true, listName: list.name };
+  }
+
+  return { registered: true, savedList: false };
 }

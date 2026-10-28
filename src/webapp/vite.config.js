@@ -7,6 +7,8 @@ export default defineConfig({
     port: 5174,
     proxy: {
       "/stores": "http://localhost:3000",
+      "/auth": "http://localhost:3000",
+      "/lists": "http://localhost:3000",
       "/health": "http://localhost:3000",
     },
   },

@@ -79,7 +79,10 @@ async function route(request, response, context) {
       return;
     }
     const storeId = decodeURIComponent(storeRouteMatch[1]);
-    const result = await calculateStoreRoute(context.pool, storeId, body?.items);
+    const result = await calculateStoreRoute(context.pool, storeId, body?.items, {
+      startNodeId: body?.startNodeId,
+      startAisle: body?.startAisle,
+    });
     if (result.error) {
       sendJson(response, result.status, { error: result.error }, context.frontendOrigin);
       return;

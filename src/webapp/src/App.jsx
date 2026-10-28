@@ -3,6 +3,7 @@ import { QrEntryScreen } from "./screens/QrEntryScreen";
 import { ProductSearchScreen } from "./screens/ProductSearchScreen";
 import { ShoppingListScreen } from "./screens/ShoppingListScreen";
 import { OptimizedRouteScreen } from "./screens/OptimizedRouteScreen";
+import { PurchaseCompletedScreen } from "./screens/PurchaseCompletedScreen";
 import {
   DEFAULT_STORE_ID,
   FALLBACK_PRODUCTS,
@@ -22,7 +23,7 @@ function getInitialStoreId() {
 function getInitialScreen() {
   const params = new URLSearchParams(window.location.search);
   const screenParam = params.get("screen");
-  if (["entry", "search", "list", "route"].includes(screenParam)) {
+  if (["entry", "search", "list", "route", "completed"].includes(screenParam)) {
     return screenParam;
   }
   return "entry";
@@ -59,6 +60,7 @@ export function App() {
   const [listItems, setListItems] = useState(loadSessionList);
   const [routeData, setRouteData] = useState(null);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
+  const [completedCount, setCompletedCount] = useState(null);
 
   useEffect(() => {
     try {
@@ -156,10 +158,10 @@ export function App() {
     );
   };
 
-  const handleGenerateRoute = async () => {
+  const handleGenerateRoute = async (options = {}) => {
     setIsGeneratingRoute(true);
     try {
-      const generated = await generateOptimizedRoute(storeId, store, listItems);
+      const generated = await generateOptimizedRoute(storeId, store, listItems, options);
       setRouteData(generated);
       setCurrentScreen("route");
     } finally {
@@ -196,7 +198,7 @@ export function App() {
             onToggleChecked={handleToggleChecked}
             onIncrementQuantity={handleIncrementQuantity}
             onAddMoreProducts={() => setCurrentScreen("search")}
-            onGenerateRoute={handleGenerateRoute}
+            onGenerateRoute={() => handleGenerateRoute()}
             onNavigate={setCurrentScreen}
             isGeneratingRoute={isGeneratingRoute}
           />
@@ -208,6 +210,24 @@ export function App() {
             routeData={routeData}
             listItems={listItems}
             onNavigate={setCurrentScreen}
+            onRecalculateFromAisle={(aisleName) =>
+              handleGenerateRoute({ startAisle: aisleName })
+            }
+            onCompleteShopping={(count) => {
+              setCompletedCount(count);
+              setCurrentScreen("completed");
+            }}
+          />
+        )}
+
+        {currentScreen === "completed" && (
+          <PurchaseCompletedScreen
+            storeId={storeId}
+            storeName={store.name}
+            listItems={listItems}
+            collectedCount={completedCount || listItems.length}
+            onStartNewShopping={() => setCurrentScreen("search")}
+            onBackToRoute={() => setCurrentScreen("route")}
           />
         )}
       </main>

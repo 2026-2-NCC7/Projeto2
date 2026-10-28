@@ -766,8 +766,25 @@ input {
   width: 52px;
   height: 245px;
   border-radius: 7px;
+  border: 1.5px solid transparent;
   background-color: #f2d1b0;
   padding: 10px 2px 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.wa-map-aisle:hover {
+  border-color: rgba(242, 105, 0, 0.45);
+}
+
+.wa-map-aisle--current {
+  border-color: #f26900;
+  background-color: #f6cca0;
 }
 
 .wa-map-aisle__label {
@@ -780,31 +797,13 @@ input {
   white-space: pre-line;
 }
 
-.wa-route-segment {
+.wa-route-svg {
   position: absolute;
-  background-color: #f26900;
-  border-radius: 5px;
-}
-
-.wa-route-segment--vertical {
-  left: 47px;
-  top: 93px;
-  width: 10px;
-  height: 126px;
-}
-
-.wa-route-segment--horizontal {
-  left: 47px;
-  top: 209px;
-  width: 180px;
-  height: 10px;
-}
-
-.wa-route-segment--last {
-  left: 217px;
-  top: 125px;
-  width: 10px;
-  height: 94px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .wa-map-stop {
@@ -823,10 +822,69 @@ input {
   justify-content: center;
   cursor: pointer;
   z-index: 2;
+  transition: left 0.25s ease, top 0.25s ease, transform 0.2s ease;
 }
 
 .wa-map-stop--active {
-  box-shadow: 0 0 0 3px rgba(242, 105, 0, 0.25);
+  box-shadow: 0 0 0 4px rgba(242, 105, 0, 0.28);
+  transform: scale(1.06);
+}
+
+.wa-map-stop--collected {
+  background-color: #1a2621;
+  color: #ffffff;
+}
+
+.wa-user-position-badge {
+  position: absolute;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background-color: #191919;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  transition: left 0.28s ease, top 0.28s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.wa-user-position-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #f26900;
+}
+
+.wa-map-footer-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.wa-map-zone-tag {
+  font-family: "Rubik", sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: #7a5a3b;
+  background-color: rgba(242, 209, 176, 0.55);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.wa-map-anchor-hint {
+  font-size: 9px;
+  color: #8a5a2b;
+  font-weight: 500;
 }
 
 .wa-current-stop-card {
@@ -987,4 +1045,208 @@ input {
   color: #7a5a3a;
   font-size: 13px;
   text-align: center;
+}
+
+/* =========================================================
+   Screen 05 — Compra concluída & Conversão para o App
+   ========================================================= */
+.wa-screen--completed {
+  background-color: #fff7f2;
+}
+
+.wa-completed-hero {
+  height: auto;
+  min-height: 256px;
+}
+
+.wa-completed-hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wa-completed-hero__back {
+  background: rgba(25, 25, 25, 0.12);
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #191919;
+  cursor: pointer;
+}
+
+.wa-completed-hero .wa-entry-hero__eyebrow {
+  margin-top: 34px;
+}
+
+.wa-completed-body {
+  padding-top: 20px;
+}
+
+.wa-completed-lead {
+  margin-top: 6px;
+  margin-left: 2px;
+  font-size: 12px;
+  line-height: 17px;
+  color: #8a5a2b;
+}
+
+.wa-completed-benefits {
+  margin-top: 16px;
+  gap: 20px;
+}
+
+.wa-completed-cta {
+  margin-top: 28px;
+}
+
+.wa-completed-secondary-btn {
+  margin-top: 10px;
+}
+
+.wa-completed-footer {
+  margin-top: 14px;
+  padding-left: 0;
+  text-align: center;
+}
+
+.wa-completed-link {
+  color: #f26900;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.wa-completed-link:hover {
+  text-decoration: underline;
+}
+
+/* Modal / Bottom Sheet de Cadastro Rápido */
+.wa-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(25, 25, 25, 0.48);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 20;
+}
+
+.wa-modal-sheet {
+  width: 100%;
+  background-color: #fff7f2;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid #f2d7c8;
+  padding: 12px 20px 26px;
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.wa-modal-handle {
+  width: 38px;
+  height: 5px;
+  border-radius: 999px;
+  background-color: #e4c6b4;
+  margin: 0 auto 16px;
+}
+
+.wa-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wa-modal-title {
+  font-size: 18px;
+  line-height: 22px;
+  font-weight: 700;
+  color: #1a2621;
+}
+
+.wa-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #8a5a2b;
+  cursor: pointer;
+}
+
+.wa-modal-subtitle {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 17px;
+  color: #7a5a3a;
+}
+
+.wa-modal-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.wa-modal-field {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.wa-modal-field span {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a2621;
+}
+
+.wa-modal-field input {
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #f2d3c1;
+  background-color: #ffffff;
+  padding: 0 12px;
+  font-size: 14px;
+  color: #1a2621;
+  outline: none;
+}
+
+.wa-modal-field input:focus {
+  border-color: #f26900;
+}
+
+.wa-modal-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #b42318;
+  background-color: #fef3f2;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.wa-modal-submit {
+  margin-top: 16px;
+  height: 50px;
+}
+
+.wa-modal-cancel {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a5a2b;
+  cursor: pointer;
+  padding: 6px;
+  text-align: center;
+}
+
+.wa-modal-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 4px 4px;
+}
+
+.wa-modal-success__badge {
+  margin-bottom: 12px;
 }

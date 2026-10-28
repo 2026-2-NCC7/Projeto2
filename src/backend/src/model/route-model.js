@@ -52,6 +52,66 @@ function buildAdjacency(edges, nodes) {
   return adjacency;
 }
 
+function orderStopsGreedy(locatedItems, adjacency, nodes, initialNodeId) {
+  const remaining = [...locatedItems];
+  const orderedStops = [];
+  const unreachableItems = [];
+  let currentNode = initialNodeId ? String(initialNodeId) : null;
+  let totalDistance = 0;
+
+  while (remaining.length > 0) {
+    let bestIndex = -1;
+    let bestSegment = null;
+
+    for (let i = 0; i < remaining.length; i += 1) {
+      const candidate = remaining[i];
+      const target = String(candidate.nodeId);
+      const segment = currentNode && currentNode !== target
+        ? shortestPath(adjacency, nodes, currentNode, target)
+        : { path: [target], distance: 0 };
+
+      if (!segment) continue;
+
+      if (bestSegment === null || segment.distance < bestSegment.distance) {
+        bestSegment = segment;
+        bestIndex = i;
+      }
+    }
+
+    if (bestIndex === -1 || !bestSegment) {
+      for (const item of remaining) {
+        unreachableItems.push({
+          ...item,
+          reason: "Não há caminho conectado no grafo da loja.",
+        });
+      }
+      break;
+    }
+
+    const [chosen] = remaining.splice(bestIndex, 1);
+    const targetNode = nodes.get(String(chosen.nodeId));
+    totalDistance += bestSegment.distance;
+    orderedStops.push({
+      productId: chosen.productId,
+      name: chosen.name,
+      category: chosen.category,
+      size: chosen.size,
+      quantity: chosen.quantity,
+      nodeId: chosen.nodeId,
+      aisle: chosen.aisle,
+      shelf: chosen.shelf,
+      coordinates: targetNode
+        ? { x: Number(targetNode.x) || 0, y: Number(targetNode.y) || 0 }
+        : null,
+      path: bestSegment.path.map((nodeId) => Number(nodeId)),
+      distance: bestSegment.distance,
+    });
+    currentNode = String(chosen.nodeId);
+  }
+
+  return { orderedStops, unreachableItems, totalDistance };
+}
+
 async function calculateListRoute(pool, listId, ownerId) {
   const listResult = await pool.query(
     `SELECT l.id, l.nome AS name, l.filial_id AS "storeId", l.status,
@@ -101,32 +161,14 @@ async function calculateListRoute(pool, listId, ownerId) {
     to: String(edge.to),
   })), nodes);
   const entrance = graphNodesResult.rows.find((node) => node.tipo === "entrada");
-  const orderedStops = [];
-  let currentNode = entrance ? String(entrance.id) : null;
-  let totalDistance = 0;
 
-  for (const item of locatedItems) {
-    const target = String(item.nodeId);
-    const segment = currentNode && currentNode !== target
-      ? shortestPath(adjacency, nodes, currentNode, target)
-      : { path: [target], distance: 0 };
-    if (!segment) {
-      unlocatedItems.push({ ...item, reason: "Não há caminho conectado no grafo da loja." });
-      continue;
-    }
-    totalDistance += segment.distance;
-    orderedStops.push({
-      productId: item.productId,
-      name: item.name,
-      quantity: item.quantity,
-      nodeId: item.nodeId,
-      aisle: item.aisle,
-      shelf: item.shelf,
-      path: segment.path.map((nodeId) => Number(nodeId)),
-      distance: segment.distance,
-    });
-    currentNode = target;
-  }
+  const { orderedStops, unreachableItems, totalDistance } = orderStopsGreedy(
+    locatedItems,
+    adjacency,
+    nodes,
+    entrance ? String(entrance.id) : null,
+  );
+  unlocatedItems.push(...unreachableItems);
 
   return {
     route: {
@@ -142,7 +184,7 @@ async function calculateListRoute(pool, listId, ownerId) {
   };
 }
 
-async function calculateStoreRoute(pool, storeId, rawItems) {
+async function calculateStoreRoute(pool, storeId, rawItems, options = {}) {
   const storeResult = await pool.query(
     "SELECT id, nome AS name FROM filial WHERE id = $1",
     [storeId],
@@ -221,39 +263,50 @@ async function calculateStoreRoute(pool, storeId, rawItems) {
     })),
     nodes,
   );
-  const entrance = graphNodesResult.rows.find((node) => node.tipo === "entrada");
-  const orderedStops = [];
-  let currentNode = entrance ? String(entrance.id) : null;
-  let totalDistance = 0;
 
-  for (const item of locatedItems) {
-    const target = String(item.nodeId);
-    const segment = currentNode && currentNode !== target
-      ? shortestPath(adjacency, nodes, currentNode, target)
-      : { path: [target], distance: 0 };
-    if (!segment) {
-      unlocatedItems.push({ ...item, reason: "Não há caminho conectado no grafo da loja." });
-      continue;
-    }
-    totalDistance += segment.distance;
-    orderedStops.push({
-      productId: item.productId,
-      name: item.name,
-      category: item.category,
-      size: item.size,
-      quantity: item.quantity,
-      nodeId: item.nodeId,
-      aisle: item.aisle,
-      shelf: item.shelf,
-      path: segment.path.map((nodeId) => Number(nodeId)),
-      distance: segment.distance,
-    });
-    currentNode = target;
+  const entrance = graphNodesResult.rows.find((node) => node.tipo === "entrada");
+  const checkout = graphNodesResult.rows.find((node) => node.tipo === "checkout");
+
+  let startNode = entrance || null;
+  if (options?.startNodeId && nodes.has(String(options.startNodeId))) {
+    startNode = nodes.get(String(options.startNodeId));
+  } else if (options?.startAisle) {
+    const targetAisle = String(options.startAisle).toLowerCase();
+    const matchedNode = graphNodesResult.rows.find((node) =>
+      String(node.nome || "").toLowerCase().includes(targetAisle),
+    );
+    if (matchedNode) startNode = matchedNode;
   }
+
+  const { orderedStops, unreachableItems, totalDistance } = orderStopsGreedy(
+    locatedItems,
+    adjacency,
+    nodes,
+    startNode ? String(startNode.id) : null,
+  );
+  unlocatedItems.push(...unreachableItems);
 
   return {
     route: {
       store,
+      anchorNode: startNode
+        ? { id: Number(startNode.id), name: startNode.nome, type: startNode.tipo }
+        : null,
+      graph: {
+        entrance: entrance
+          ? { id: Number(entrance.id), name: entrance.nome, x: Number(entrance.x) || 0, y: Number(entrance.y) || 0 }
+          : null,
+        checkout: checkout
+          ? { id: Number(checkout.id), name: checkout.nome, x: Number(checkout.x) || 0, y: Number(checkout.y) || 0 }
+          : null,
+        nodes: graphNodesResult.rows.map((n) => ({
+          id: Number(n.id),
+          name: n.nome,
+          type: n.tipo,
+          x: Number(n.x) || 0,
+          y: Number(n.y) || 0,
+        })),
+      },
       stops: orderedStops,
       unlocatedItems,
       totalDistance,
@@ -265,4 +318,4 @@ async function calculateStoreRoute(pool, storeId, rawItems) {
   };
 }
 
-module.exports = { calculateListRoute, calculateStoreRoute, shortestPath };
+module.exports = { calculateListRoute, calculateStoreRoute, distanceBetween, shortestPath };
