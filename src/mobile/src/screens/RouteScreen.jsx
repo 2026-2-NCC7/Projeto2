@@ -1,12 +1,29 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { useAuth } from "../context/AuthContext";
 import { calculateRoute } from "../services/route-api";
+
+function ChevronLeftIcon({ size = 20, color = "#F26900" }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path d="M12.5 15L7.5 10L12.5 5" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
 
 export function RouteScreen({ navigation, route }) {
   const { auth } = useAuth();
   const [routeData, setRouteData] = useState(null);
   const [error, setError] = useState("");
+
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("CreateList");
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -27,7 +44,7 @@ export function RouteScreen({ navigation, route }) {
       <View className="flex-1 items-center justify-center bg-white px-6">
         <Text className="font-inter-semibold text-center text-lg text-ink">Não foi possível calcular a rota</Text>
         <Text className="font-sans mt-2 text-center text-sm text-[#555]">{error}</Text>
-        <Pressable className="mt-5 rounded-[10px] bg-achai px-5 py-3" onPress={() => navigation.goBack()}>
+        <Pressable className="mt-5 rounded-[10px] bg-achai px-5 py-3" onPress={handleGoBack}>
           <Text className="font-inter-semibold text-sm text-ink">Voltar</Text>
         </Pressable>
       </View>
@@ -47,10 +64,18 @@ export function RouteScreen({ navigation, route }) {
     <View className="flex-1 bg-white">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="px-5 pb-6 pt-12">
-          <Pressable className="h-9 w-9 items-center justify-center" onPress={() => navigation.goBack()}>
-            <Text className="text-[30px] text-ink">‹</Text>
-          </Pressable>
-          <Text className="font-brand mt-3 text-[22px] text-ink">Sua rota</Text>
+          <View className="h-6 flex-row items-center justify-between">
+            <Pressable
+              accessibilityLabel="Voltar"
+              className="flex-row items-center gap-1"
+              onPress={handleGoBack}
+            >
+              <ChevronLeftIcon />
+              <Text className="font-inter-semibold text-[13px] leading-[16px] text-achai">Minhas listas</Text>
+            </Pressable>
+            <Text className="font-brand text-[20px] leading-[24px] text-ink">Ach.ai</Text>
+          </View>
+          <Text className="font-brand mt-4 text-[22px] text-ink">Sua rota</Text>
           <Text className="font-sans mt-1 text-[12px] text-[#555]">
             {routeData.list.name} · {routeData.list.storeName}
           </Text>

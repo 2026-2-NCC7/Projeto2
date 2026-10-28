@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
-import { useAuth } from "../context/AuthContext";
+import Svg, { Path } from "react-native-svg";
+import { BottomNavigation } from "../components/BottomNavigation";
 import { SearchBar } from "../components/SearchBar";
+import { useAuth } from "../context/AuthContext";
 import { fetchCatalog } from "../services/catalog-api";
+
+function ChevronLeftIcon({ size = 20, color = "#F26900" }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path d="M12.5 15L7.5 10L12.5 5" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
 
 const categories = ["Todos", "Mercearia", "Bebidas", "Hortifruti", "Laticínios", "Limpeza", "Padaria"];
 
@@ -97,17 +107,17 @@ export function CatalogScreen({ navigation }) {
         return;
       }
       fetchCatalog(auth?.token, currentStore.id, search, controller.signal)
-      .then((items) => {
-        if (active) setProducts(items);
-      })
-      .catch((error) => {
-        if (active && error.name !== "AbortError") {
-          setErrorKind(error instanceof TypeError ? "offline" : "error");
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+        .then((items) => {
+          if (active) setProducts(items);
+        })
+        .catch((error) => {
+          if (active && error.name !== "AbortError") {
+            setErrorKind(error instanceof TypeError ? "offline" : "error");
+          }
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
     }, 300);
     return () => {
       active = false;
@@ -121,18 +131,28 @@ export function CatalogScreen({ navigation }) {
     [category, products],
   );
 
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("Home");
+    }
+  };
+
   const header = (
     <View className="px-5 pb-4 pt-12">
-      <View className="flex-row items-center">
+      <View className="h-6 flex-row items-center justify-between">
         <Pressable
           accessibilityLabel="Voltar"
-          className="mr-3 h-9 w-9 items-center justify-center"
-          onPress={() => navigation.goBack()}
+          className="flex-row items-center gap-1"
+          onPress={handleGoBack}
         >
-          <Text className="text-[30px] text-ink">‹</Text>
+          <ChevronLeftIcon />
+          <Text className="font-inter-semibold text-[13px] leading-[16px] text-achai">Início</Text>
         </Pressable>
-        <Text className="font-brand text-[22px] text-ink">Buscar produtos</Text>
+        <Text className="font-brand text-[20px] leading-[24px] text-ink">Ach.ai</Text>
       </View>
+      <Text className="font-brand mt-4 text-[22px] text-ink">Buscar produtos</Text>
 
       <SearchBar value={search} onChangeText={setSearch} onClear={() => setSearch("")} />
 
@@ -166,19 +186,24 @@ export function CatalogScreen({ navigation }) {
   return (
     <View className="flex-1 bg-white">
       <FlatList
+        className="flex-1"
         contentContainerStyle={{ paddingBottom: 24 }}
         data={loading ? [] : errorKind ? [] : filteredProducts}
         keyExtractor={(item) => String(item.id)}
         ListEmptyComponent={
           loading ? (
             <View className="px-5">
-              {Array.from({ length: 5 }, (_, index) => <ProductSkeleton key={index} />)}
+              {Array.from({ length: 5 }, (_, index) => (
+                <ProductSkeleton key={index} />
+              ))}
             </View>
           ) : errorKind ? (
             <View className="px-5">
               <CatalogState
                 kind={errorKind}
-                onRetry={() => errorKind === "noStore" ? navigation.navigate("QrScanner") : setRetryKey((key) => key + 1)}
+                onRetry={() =>
+                  errorKind === "noStore" ? navigation.navigate("QrScanner") : setRetryKey((key) => key + 1)
+                }
               />
             </View>
           ) : (
@@ -204,6 +229,7 @@ export function CatalogScreen({ navigation }) {
         refreshing={loading}
         onRefresh={() => setRetryKey((key) => key + 1)}
       />
+      <BottomNavigation navigation={navigation} activeTab="Buscar" />
     </View>
   );
 }

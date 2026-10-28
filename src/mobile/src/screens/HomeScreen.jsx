@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { BottomNavigation } from "../components/BottomNavigation";
 import { useAuth } from "../context/AuthContext";
 import { fetchSuggestions } from "../services/suggestions-api";
 
@@ -9,28 +10,6 @@ function SectionTitle({ children, action }) {
     <View className="flex-row items-center justify-between">
       <Text className="font-inter-semibold text-[19px] text-achai">{children}</Text>
       {action ? <Text className="font-inter-semibold text-xs text-achai">{action}</Text> : null}
-    </View>
-  );
-}
-
-function BottomNavigation({ navigation }) {
-  return (
-    <View className="h-[72px] flex-row border-t border-[#e8e8e0] bg-white">
-      {[
-        ["⌂", "Início", true],
-        ["⌕", "Buscar", false],
-        ["☷", "Listas", false],
-        ["◉", "Perfil", false],
-      ].map(([icon, label, active]) => (
-        <Pressable
-          className="flex-1 items-center pt-2"
-          key={label}
-          onPress={() => label === "Buscar" && navigation.navigate("Catalog")}
-        >
-          <Text className={`text-[21px] ${active ? "text-achai" : "text-[#555]"}`}>{icon}</Text>
-          <Text className={`font-sans text-[11px] ${active ? "text-achai" : "text-[#555]"}`}>{label}</Text>
-        </Pressable>
-      ))}
     </View>
   );
 }
@@ -175,7 +154,7 @@ export function HomeScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
-      <BottomNavigation navigation={navigation} />
+      <BottomNavigation navigation={navigation} activeTab="Início" />
     </View>
   );
 }

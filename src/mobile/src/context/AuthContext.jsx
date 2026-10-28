@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { loginRequest } from "../services/auth-api";
-import { saveAuth } from "../storage/auth-storage";
+import { loadAuth, saveAuth } from "../storage/auth-storage";
 import { loadCurrentStore, saveCurrentStore } from "../storage/store-storage";
 
 const AuthContext = createContext(null);
@@ -10,6 +10,9 @@ export function AuthProvider({ children }) {
   const [currentStore, setCurrentStoreState] = useState(null);
 
   useEffect(() => {
+    loadAuth().then((storedAuth) => {
+      if (storedAuth) setAuth(storedAuth);
+    }).catch(() => {});
     loadCurrentStore().then(setCurrentStoreState).catch(() => setCurrentStoreState(null));
   }, []);
 
