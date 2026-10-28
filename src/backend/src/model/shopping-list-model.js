@@ -9,6 +9,50 @@ function normalizeQuantity(value) {
   return Number.isInteger(quantity) && quantity > 0 ? quantity : null;
 }
 
+async function listUserLists(pool, ownerId) {
+  const result = await pool.query(
+    `SELECT
+       l.id,
+       l.nome AS name,
+       l.filial_id AS "storeId",
+       f.nome AS "storeName",
+       l.status,
+       l.created_at AS "createdAt",
+       l.updated_at AS "updatedAt",
+       COALESCE(SUM(i.quantidade), 0)::INTEGER AS "itemCount",
+       COUNT(i.produto_id)::INTEGER AS "productCount",
+       COALESCE(SUM(i.quantidade * i.preco_unitario), 0)::NUMERIC(10, 2) AS total,
+       COALESCE(
+         BOOL_OR(i.produto_id IS NOT NULL AND p.no_id IS NULL AND p.corredor IS NULL AND p.prateleira IS NULL),
+         FALSE
+       ) AS "hasLocationWarning",
+       COALESCE(
+         json_agg(
+           json_build_object(
+             'productId', i.produto_id,
+             'quantity', i.quantidade,
+             'unitPrice', i.preco_unitario
+           )
+         ) FILTER (WHERE i.produto_id IS NOT NULL),
+         '[]'::json
+       ) AS items
+     FROM shopping_list l
+     JOIN filial f ON f.id = l.filial_id
+     LEFT JOIN shopping_list_item i ON i.list_id = l.id
+     LEFT JOIN produto p ON p.id = i.produto_id
+     WHERE l.admin_user_id = $1
+     GROUP BY l.id, f.nome
+     ORDER BY l.updated_at DESC, l.created_at DESC`,
+    [ownerId],
+  );
+  return result.rows.map((row) => ({
+    ...row,
+    total: Number(row.total || 0),
+    hasLocationWarning: Boolean(row.hasLocationWarning),
+    items: Array.isArray(row.items) ? row.items : [],
+  }));
+}
+
 async function getListSummary(pool, listId, ownerId) {
   const result = await pool.query(
     `SELECT
@@ -103,6 +147,14 @@ async function updateListItem(pool, listId, ownerId, productId, quantity) {
   return { product: result.rows[0] };
 }
 
+async function deleteList(pool, listId, ownerId) {
+  const result = await pool.query(
+    "DELETE FROM shopping_list WHERE id = $1 AND admin_user_id = $2 RETURNING id",
+    [listId, ownerId],
+  );
+  return Boolean(result.rows[0]);
+}
+
 async function removeListItem(pool, listId, ownerId, productId) {
   const result = await pool.query(
     `DELETE FROM shopping_list_item i
@@ -118,7 +170,9 @@ async function removeListItem(pool, listId, ownerId, productId) {
 
 module.exports = {
   createList,
+  deleteList,
   getListSummary,
+  listUserLists,
   normalizeListName,
   normalizeQuantity,
   removeListItem,

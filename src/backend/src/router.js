@@ -6,7 +6,9 @@ const { requireRole } = require("./middlewares/authorization");
 const { findProducts, findStore } = require("./model/catalog-model");
 const {
   createList,
+  deleteList,
   getListSummary,
+  listUserLists,
   removeListItem,
   updateListItem,
   upsertListItem,
@@ -163,6 +165,18 @@ async function route(request, response, context) {
     sendJson(response, 201, { list }, context.frontendOrigin);
     return;
   }
+  if (pathname === "/lists") {
+    if (request.method !== "GET") {
+      response.setHeader("Allow", "GET");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+    const lists = await listUserLists(context.pool, payload.sub);
+    sendJson(response, 200, { lists }, context.frontendOrigin);
+    return;
+  }
   const listMatch = pathname.match(/^\/lists\/([^/]+)$/);
   const listRouteMatch = pathname.match(/^\/lists\/([^/]+)\/route$/);
   if (listRouteMatch) {
@@ -182,6 +196,16 @@ async function route(request, response, context) {
     return;
   }
   if (listMatch) {
+    if (request.method === "DELETE") {
+      const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+      if (!payload) return;
+      if (!await deleteList(context.pool, decodeURIComponent(listMatch[1]), payload.sub)) {
+        sendJson(response, 404, { error: "Lista não encontrada." }, context.frontendOrigin);
+        return;
+      }
+      sendJson(response, 200, { deleted: true }, context.frontendOrigin);
+      return;
+    }
     if (request.method !== "GET") {
       response.setHeader("Allow", "GET");
       sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);

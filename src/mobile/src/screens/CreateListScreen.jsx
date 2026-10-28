@@ -227,6 +227,78 @@ function SprayCanIcon() {
   );
 }
 
+function CroissantIcon() {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4.6 13.11l5.79-3.21c1.89-1.05 4.79 1.78 3.71 3.71l-3.22 5.81C8.8 23.16.79 15.23 4.6 13.11zM18 14c1.77 1.67 3.5 2.5 5 1 1.5-1.5-.5-4-2-5.5-1.5-1.5-3.5-2.5-5-1M10 6C8.33 4.23 7.5 2.5 9 1c1.5-1.5 4 .5 5.5 2 1.5 1.5 2.5 3.5 1 5"
+        stroke={C.orange}
+        {...stroke}
+      />
+    </Svg>
+  );
+}
+
+function BeefIcon() {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M16.4 13.7A6.5 6.5 0 1 0 6.28 6.6c-1.1 3.13-.78 3.9-3.18 6.08A3 3 0 0 0 5 18c4 0 8.4-1.8 11.4-4.3zM18.5 6v.5a6.5 6.5 0 0 1-2.1 4.77C13.4 13.8 9 15.5 5 15.5a3 3 0 0 1-2.68-1.66L2 14.5a3 3 0 0 0 3 3.5c4 0 8.4-1.8 11.4-4.3A6.5 6.5 0 0 0 18.5 9V6zM12.5 8.5a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"
+        stroke={C.orange}
+        {...stroke}
+      />
+    </Svg>
+  );
+}
+
+function CupSodaIcon() {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 8l1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8M5 8h14M7 15a6.47 6.47 0 0 1 5 0 6.47 6.47 0 0 0 5 0M12 8l1-6h3"
+        stroke={C.orange}
+        {...stroke}
+      />
+    </Svg>
+  );
+}
+
+function SnowflakeIcon() {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2 12h20M12 2v20M20 16l-4-4 4-4M4 8l4 4-4 4M16 4l-4 4-4-4M8 20l4-4 4 4"
+        stroke={C.orange}
+        {...stroke}
+      />
+    </Svg>
+  );
+}
+
+function SparklesIcon() {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0zM20 3v4M22 5h-4M4 17v2M5 18H3"
+        stroke={C.orange}
+        {...stroke}
+      />
+    </Svg>
+  );
+}
+
+function PawPrintIcon() {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M11 4a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM18 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM20 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM8 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM9 17c1.5-2 4.5-2 6 0 1.2 1.6.4 4-1.6 4H10.6c-2 0-2.8-2.4-1.6-4z"
+        stroke={C.orange}
+        {...stroke}
+      />
+    </Svg>
+  );
+}
+
 function CheckIcon() {
   return (
     <Svg width={11} height={11} viewBox="0 0 11 11" fill="none">
@@ -300,6 +372,12 @@ const categories = [
   { label: "Laticínios", bg: "#EDF3F7", Icon: MilkIcon },
   { label: "Mercearia", bg: "#FBF3DD", Icon: WheatIcon },
   { label: "Limpeza", bg: "#FFF4E8", Icon: SprayCanIcon },
+  { label: "Padaria", bg: "#F9EFE4", Icon: CroissantIcon },
+  { label: "Carnes", bg: "#FCEAEA", Icon: BeefIcon },
+  { label: "Bebidas", bg: "#EAF4F4", Icon: CupSodaIcon },
+  { label: "Congelados", bg: "#EBF1FA", Icon: SnowflakeIcon },
+  { label: "Higiene", bg: "#F3EDF9", Icon: SparklesIcon },
+  { label: "Pet", bg: "#F5EFE6", Icon: PawPrintIcon },
 ];
 
 /* ---------- Componentes ---------- */
@@ -383,15 +461,27 @@ function ProductCard({ product, quantity, onChangeQuantity }) {
 
 /* ---------- Tela ---------- */
 
-export function CreateListScreen({ navigation }) {
+export function CreateListScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { auth, currentStore } = useAuth();
   const listNameInputRef = useRef(null);
-  const [listName, setListName] = useState("Compra da semana");
+  const existingList = route?.params?.list || null;
+  const [listName, setListName] = useState(existingList?.name || "Compra da semana");
   const [products, setProducts] = useState(() => fallbackProducts.map(enrichProduct));
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [quantities, setQuantities] = useState({ 1: 1, 2: 2 });
+  const [quantities, setQuantities] = useState(() => {
+    if (Array.isArray(existingList?.items) && existingList.items.length > 0) {
+      const initial = {};
+      for (const item of existingList.items) {
+        if (item?.productId && item?.quantity > 0) {
+          initial[item.productId] = item.quantity;
+        }
+      }
+      return initial;
+    }
+    return existingList ? {} : { 1: 1, 2: 2 };
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -570,15 +660,16 @@ export function CreateListScreen({ navigation }) {
             />
           </View>
 
-          {/* Categorias — gap 14 */}
+          {/* Categorias — gap 14, scroll lateral sem "Ver todas" */}
           <View className="gap-3.5">
-            <View className="flex-row items-center justify-between">
-              <Text className="font-inter-bold text-[18px] leading-[22px] text-ink">Explore por categoria</Text>
-              <Pressable onPress={() => setCategory("")}>
-                <Text className="font-inter-semibold text-[12px] leading-[15px] text-achai">Ver todas</Text>
-              </Pressable>
-            </View>
-            <View className="flex-row justify-between">
+            <Text className="font-inter-bold text-[18px] leading-[22px] text-ink">
+              Explore por categoria
+            </Text>
+            <ScrollView
+              contentContainerStyle={{ gap: 15, paddingRight: 4 }}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
               {categories.map(({ label, bg, Icon }) => {
                 const isSelected = category === label;
                 return (
@@ -595,11 +686,13 @@ export function CreateListScreen({ navigation }) {
                     >
                       <Icon />
                     </View>
-                    <Text className="font-inter-medium text-[11px] leading-[13px] text-ink">{label}</Text>
+                    <Text className="font-inter-medium text-[11px] leading-[13px] text-ink" numberOfLines={1}>
+                      {label}
+                    </Text>
                   </Pressable>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
 
           {/* Produtos para a semana — gap 14 */}
