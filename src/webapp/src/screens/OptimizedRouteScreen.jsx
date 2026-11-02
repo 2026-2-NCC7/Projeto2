@@ -3,61 +3,64 @@ import { StoreHeader } from "../components/StoreHeader";
 import { getAisleColumnIndex } from "../services/webapp-api";
 
 const AISLE_COLUMNS = [
-  { id: "c1", name: "Corredor 1", label: "CORREDOR\n1", left: 25, centerX: 51 },
-  { id: "c2", name: "Corredor 2", label: "CORREDOR\n2", left: 103, centerX: 129 },
-  { id: "c3", name: "Corredor 3", label: "CORREDOR\n3", left: 181, centerX: 207 },
-  { id: "horti", name: "Hortifruti", label: "HORTI", left: 259, centerX: 285 },
+  { id: "c1", name: "Corredor 1", label: "C1", left: 28, centerX: 46 },
+  { id: "c2", name: "Corredor 2", label: "C2", left: 105, centerX: 123 },
+  { id: "c3", name: "Corredor 3", label: "C3", left: 182, centerX: 200 },
+  { id: "horti", name: "Hortifruti", label: "HORTI", left: 259, centerX: 277 },
 ];
 
 function getStopCoordinates(stop, index, totalInSameCol = 1, rankInCol = 0) {
   const colIdx = getAisleColumnIndex(stop?.aisle || stop?.category || "");
   const col = AISLE_COLUMNS[colIdx] || AISLE_COLUMNS[0];
-
-  // Preserve exact Figma pin positions for the 3-stop demo layout
-  if (colIdx === 0 && rankInCol === 0) {
-    return { left: 40, top: 82, centerX: 52, centerY: 97, colIdx };
-  }
-  if (colIdx === 2 && rankInCol === 0) {
-    return { left: 210, top: 110, centerX: 222, centerY: 125, colIdx };
-  }
-  if (colIdx === 3 && rankInCol === 0) {
-    return { left: 270, top: 230, centerX: 285, centerY: 245, colIdx };
-  }
-
-  const baseTop = 92;
-  const stepY = totalInSameCol > 1 ? Math.min(52, 130 / totalInSameCol) : 0;
-  const top = Math.round(baseTop + rankInCol * stepY + (index % 2) * 14);
-  const left = col.centerX - 15;
+  const baseTop = 78;
+  const stepY = totalInSameCol > 1
+    ? Math.min(42, 160 / (totalInSameCol - 1))
+    : 80;
+  const top = Math.round(
+    totalInSameCol > 1
+      ? baseTop + rankInCol * stepY
+      : baseTop + stepY,
+  );
+  const left = col.centerX - 14;
   return {
     left,
     top,
-    centerX: left + 15,
-    centerY: top + 15,
+    centerX: left + 14,
+    centerY: top + 14,
     colIdx,
   };
 }
 
-function buildOrthogonalPolylinePoints(pins) {
-  if (!pins.length) return [];
-  const WALKWAY_Y = 214; // Horizontal cross-aisle y coordinate matching Figma (209 + 5)
-  const points = [];
-
-  for (let i = 0; i < pins.length; i += 1) {
-    const curr = pins[i];
-    if (i === 0) {
-      points.push({ x: curr.centerX, y: curr.centerY });
-      continue;
-    }
-    const prev = pins[i - 1];
-    if (prev.colIdx === curr.colIdx) {
-      points.push({ x: curr.centerX, y: curr.centerY });
-    } else {
-      points.push({ x: prev.centerX, y: WALKWAY_Y });
-      points.push({ x: curr.centerX, y: WALKWAY_Y });
-      points.push({ x: curr.centerX, y: curr.centerY });
-    }
+function buildOrthogonalSegment(prev, curr, transitionIndex) {
+  if (prev.colIdx === curr.colIdx) {
+    return [
+      { x: prev.centerX, y: prev.centerY },
+      { x: curr.centerX, y: curr.centerY },
+    ];
   }
-  return points;
+
+  // Alternate the two open cross-aisles so the path remains outside the shelves.
+  const walkwayY = transitionIndex % 2 === 0 ? 278 : 38;
+  return [
+    { x: prev.centerX, y: prev.centerY },
+    { x: prev.centerX, y: walkwayY },
+    { x: curr.centerX, y: walkwayY },
+    { x: curr.centerX, y: curr.centerY },
+  ];
+}
+
+function buildOrthogonalRouteSegments(pins) {
+  if (pins.length < 2) return [];
+  return pins.slice(1).map((pin, index) => {
+    return buildOrthogonalSegment(pins[index], pin, index);
+  });
+}
+
+function flattenRouteSegments(segments) {
+  return segments.reduce((points, segment, index) => {
+    if (index === 0) return [...segment];
+    return [...points, ...segment.slice(1)];
+  }, []);
 }
 
 function formatStopLocation(stop) {
@@ -80,11 +83,11 @@ export function OptimizedRouteScreen({
   onRecalculateFromAisle,
 }) {
   const [collectedIds, setCollectedIds] = useState(() => new Set());
+  const [notFoundIds, setNotFoundIds] = useState(() => new Set());
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnchorAisle, setUserAnchorAisle] = useState(null);
 
   const stops = useMemo(() => {
-    const rawStops = routeData?.stops?.length
+    const rawStops = Array.isArray(routeData?.stops)
       ? routeData.stops
       : listItems.map((item) => ({
           productId: item.id,
@@ -98,10 +101,10 @@ export function OptimizedRouteScreen({
   }, [routeData, listItems]);
 
   const totalCount = Math.max(stops.length, 1);
-  // Display at least 1 collected on initial view to match Figma ("1 de 3 itens coletados")
-  const displayedCollectedCount = Math.max(1, Math.min(totalCount, collectedIds.size + 1));
+  const displayedCollectedCount = Math.min(totalCount, collectedIds.size);
+  const activeIndex = Math.min(currentIndex, Math.max(0, stops.length - 1));
 
-  const activeStop = stops[currentIndex] || stops[0] || {
+  const activeStop = stops[activeIndex] || stops[0] || {
     productId: 2,
     name: "Leite integral 1 L",
     aisle: "Corredor 3",
@@ -123,26 +126,34 @@ export function OptimizedRouteScreen({
       const { col, rank } = ranksByIdx[idx];
       const totalInCol = countsByCol.get(col) || 1;
       const coords = getStopCoordinates(stop, idx, totalInCol, rank);
+      const isNotFound = notFoundIds.has(stop.productId);
       return {
         number: idx + 1,
         stop,
-        isCollected: collectedIds.has(stop.productId) || idx < currentIndex,
+        isCollected:
+          !isNotFound && (collectedIds.has(stop.productId) || idx < activeIndex),
+        isNotFound,
         ...coords,
       };
     });
-  }, [stops, collectedIds, currentIndex]);
+  }, [stops, collectedIds, notFoundIds, activeIndex]);
 
-  const polylinePoints = useMemo(
-    () => buildOrthogonalPolylinePoints(stopPins),
+  const routeSegments = useMemo(
+    () => buildOrthogonalRouteSegments(stopPins),
     [stopPins],
   );
 
-  const svgPointsAttr = useMemo(
-    () => polylinePoints.map((pt) => `${pt.x},${pt.y}`).join(" "),
-    [polylinePoints],
+  const routePoints = useMemo(
+    () => flattenRouteSegments(routeSegments),
+    [routeSegments],
   );
 
-  const activePin = stopPins[currentIndex] || stopPins[0];
+  const activeSegmentPoints = routeSegments[activeIndex] || [];
+  const routePointsAttr = routePoints.map((pt) => `${pt.x},${pt.y}`).join(" ");
+  const activeRoutePointsAttr = activeSegmentPoints
+    .map((pt) => `${pt.x},${pt.y}`)
+    .join(" ");
+  const activePin = stopPins[activeIndex] || stopPins[0];
   const activeColIdx = activePin ? activePin.colIdx : 0;
 
   const handleMarkCollected = () => {
@@ -154,17 +165,25 @@ export function OptimizedRouteScreen({
       });
     }
 
-    if (currentIndex < stops.length - 1) {
+    if (activeIndex < stops.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else if (onCompleteShopping) {
-      onCompleteShopping(totalCount);
+      onCompleteShopping(Math.min(listItems.length, displayedCollectedCount + 1));
     } else {
       onNavigate("completed");
     }
   };
 
   const handleNotFound = () => {
-    if (currentIndex < stops.length - 1) {
+    if (activeStop?.productId !== undefined) {
+      setNotFoundIds((prev) => {
+        const next = new Set(prev);
+        next.add(activeStop.productId);
+        return next;
+      });
+    }
+
+    if (activeIndex < stops.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else if (onCompleteShopping) {
       onCompleteShopping(displayedCollectedCount);
@@ -174,11 +193,37 @@ export function OptimizedRouteScreen({
   };
 
   const handleAisleClick = (aisleColumn) => {
-    setUserAnchorAisle(aisleColumn.name);
+    const excludedProductIds = Array.from(
+      new Set([
+        ...Array.from(collectedIds).map((id) => String(id)),
+        ...Array.from(notFoundIds).map((id) => String(id)),
+      ]),
+    );
+    const remainingStops = stops.filter(
+      (stop) => !excludedProductIds.includes(String(stop.productId)),
+    );
+
+    if (remainingStops.length === 0) {
+      if (onCompleteShopping) onCompleteShopping(displayedCollectedCount);
+      return;
+    }
+
     if (onRecalculateFromAisle) {
-      onRecalculateFromAisle(aisleColumn.name);
+      onRecalculateFromAisle(aisleColumn.name, excludedProductIds);
       setCurrentIndex(0);
     }
+  };
+
+  const handleMapClick = (event) => {
+    if (event.target !== event.currentTarget) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const localX = ((event.clientX - bounds.left) / bounds.width) * 350;
+    const nearestAisle = AISLE_COLUMNS.reduce((closest, aisle) => {
+      const closestDistance = Math.abs(closest.centerX - localX);
+      const aisleDistance = Math.abs(aisle.centerX - localX);
+      return aisleDistance < closestDistance ? aisle : closest;
+    }, AISLE_COLUMNS[0]);
+    handleAisleClick(nearestAisle);
   };
 
   const progressRatio = Math.min(1, Math.max(0, displayedCollectedCount / totalCount));
@@ -198,7 +243,12 @@ export function OptimizedRouteScreen({
           {routeData?.totalDistance ? ` · ~${Math.round(routeData.totalDistance)}m` : ""}
         </p>
 
-        <div className="wa-map-canvas" role="region" aria-label="Mapa indoor interativo da loja">
+        <div
+          className="wa-map-canvas"
+          role="region"
+          aria-label="Mapa indoor interativo da loja"
+          onClick={handleMapClick}
+        >
           {AISLE_COLUMNS.map((aisle, idx) => {
             const isCurrentAisle = idx === activeColIdx;
             return (
@@ -207,7 +257,10 @@ export function OptimizedRouteScreen({
                 type="button"
                 className={`wa-map-aisle ${isCurrentAisle ? "wa-map-aisle--current" : ""}`}
                 style={{ left: `${aisle.left}px` }}
-                onClick={() => handleAisleClick(aisle)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleAisleClick(aisle);
+                }}
                 title={`Toque para informar que você está em ${aisle.name} e recalcular a rota`}
               >
                 <span className="wa-map-aisle__label">{aisle.label}</span>
@@ -216,39 +269,58 @@ export function OptimizedRouteScreen({
           })}
 
           {/* Dynamic SVG indoor path connecting the stops across aisles */}
-          {polylinePoints.length > 1 ? (
+          {routePoints.length > 1 ? (
             <svg
               className="wa-route-svg"
-              viewBox="0 0 350 355"
+              viewBox="0 0 350 320"
               preserveAspectRatio="none"
               aria-hidden="true"
             >
               <polyline
-                points={svgPointsAttr}
+                points={routePointsAttr}
                 fill="none"
-                stroke="#F26900"
-                strokeWidth="10"
+                stroke="#f2d0a8"
+                strokeWidth="4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
+              {activeRoutePointsAttr ? (
+                <polyline
+                  points={activeRoutePointsAttr}
+                  fill="none"
+                  stroke="#f26900"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : null}
             </svg>
           ) : null}
 
           {/* Stop Pins */}
           {stopPins.map((pin, idx) => {
-            const isSelected = idx === currentIndex;
+            const isSelected = idx === activeIndex;
             return (
               <button
                 key={`${pin.stop?.productId || idx}-${pin.number}`}
                 type="button"
                 className={`wa-map-stop ${isSelected ? "wa-map-stop--active" : ""} ${
                   pin.isCollected ? "wa-map-stop--collected" : ""
-                }`}
+                } ${pin.isNotFound ? "wa-map-stop--not-found" : ""}`}
                 style={{ left: `${pin.left}px`, top: `${pin.top}px` }}
-                onClick={() => setCurrentIndex(idx)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setCurrentIndex(idx);
+                }}
                 aria-label={`Parada ${pin.number}: ${pin.stop?.name || ""}`}
               >
-                <span>{pin.isCollected && !isSelected ? "✓" : pin.number}</span>
+                <span>
+                  {pin.isNotFound && !isSelected
+                    ? "X"
+                    : pin.isCollected && !isSelected
+                      ? "✓"
+                      : pin.number}
+                </span>
               </button>
             );
           })}
@@ -268,21 +340,11 @@ export function OptimizedRouteScreen({
             </div>
           ) : null}
 
-          {/* Floor plan reference markers: Entrada & Caixa */}
-          <div className="wa-map-footer-bar">
-            <span className="wa-map-zone-tag">↳ ENTRADA (QR)</span>
-            <span className="wa-map-anchor-hint">
-              {userAnchorAisle
-                ? `Posição: ${userAnchorAisle}`
-                : "Toque num corredor para reposicionar"}
-            </span>
-            <span className="wa-map-zone-tag">CAIXA ↱</span>
-          </div>
         </div>
 
         <section className="wa-current-stop-card" aria-live="polite">
           <div className="wa-current-stop-card__eyebrow">
-            PRÓXIMO PRODUTO · {currentIndex + 1} DE {totalCount}
+            PRÓXIMA PARADA · {activeIndex + 1} DE {totalCount}
           </div>
           <h2 className="wa-current-stop-card__name">{activeStop.name}</h2>
           <p className="wa-current-stop-card__location">

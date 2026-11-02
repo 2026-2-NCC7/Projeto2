@@ -433,10 +433,27 @@ input {
 
 .wa-categories-grid {
   margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(4, 80px);
-  justify-content: space-between;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 9px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #f2d3c1 transparent;
+}
+
+.wa-categories-grid::-webkit-scrollbar {
+  height: 5px;
+}
+
+.wa-categories-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wa-categories-grid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background-color: #f2d3c1;
 }
 
 .wa-category-card {
@@ -451,6 +468,7 @@ input {
   justify-content: space-between;
   padding: 9px 5px 14px;
   cursor: pointer;
+  flex: 0 0 80px;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
@@ -563,12 +581,18 @@ input {
   color: #f26900;
 }
 
+.wa-product-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.wa-product-card__remove-btn,
 .wa-product-card__add-btn {
   width: 38px;
   height: 32px;
   border-radius: 10px;
-  border: none;
-  background-color: #f26900;
   color: #000000;
   font-weight: 600;
   font-size: 18px;
@@ -580,6 +604,25 @@ input {
   flex-shrink: 0;
 }
 
+.wa-product-card__add-btn {
+  border: none;
+  background-color: #f26900;
+}
+
+.wa-product-card__remove-btn {
+  border: 1px solid #f26900;
+  background-color: #fff7f2;
+}
+
+.wa-product-card__remove-btn:disabled {
+  border-color: #eadfd7;
+  background-color: #f7f3f0;
+  color: #b8aaa1;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.wa-product-card__remove-btn:active,
 .wa-product-card__add-btn:active {
   transform: scale(0.95);
 }
@@ -733,11 +776,11 @@ input {
 .wa-route-title {
   margin-top: 20px;
   padding-left: 2px;
-  font-family: "Rubik", sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 700;
-  font-size: 23px;
-  line-height: 27px;
-  color: #000000;
+  font-size: 24px;
+  line-height: 29px;
+  color: #191919;
 }
 
 .wa-route-subtitle {
@@ -754,9 +797,9 @@ input {
   margin-top: 20px;
   width: 350px;
   max-width: 100%;
-  height: 355px;
-  border-radius: 18px;
-  border: 1px solid #f2d1b0;
+  height: 320px;
+  border-radius: 16px;
+  border: 1px solid #f2d0a8;
   background-color: #fff7f1;
   position: relative;
   overflow: hidden;
@@ -764,17 +807,17 @@ input {
 
 .wa-map-aisle {
   position: absolute;
-  top: 28px;
-  width: 52px;
-  height: 245px;
-  border-radius: 7px;
-  border: 1.5px solid transparent;
-  background-color: #f2d1b0;
+  top: 62px;
+  width: 36px;
+  height: 190px;
+  border-radius: 6px;
+  border: 1px solid #f2d0a8;
+  background-color: #fff7f1;
   padding: 10px 2px 0;
-  text-align: left;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-start;
   cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease;
@@ -786,15 +829,16 @@ input {
 
 .wa-map-aisle--current {
   border-color: #f26900;
-  background-color: #f6cca0;
+  border-width: 2px;
+  background-color: #fff7f1;
 }
 
 .wa-map-aisle__label {
   display: block;
   font-family: "Rubik", sans-serif;
   font-weight: 600;
-  font-size: 9px;
-  line-height: 11px;
+  font-size: 10px;
+  line-height: 12px;
   color: #7a5a3b;
   white-space: pre-line;
 }
@@ -813,8 +857,8 @@ input {
   width: 30px;
   height: 30px;
   border-radius: 15px;
-  border: none;
-  background-color: #f26900;
+  border: 1.5px solid #f2d0a8;
+  background-color: #fff7f1;
   color: #000000;
   font-weight: 600;
   font-size: 14px;
@@ -827,14 +871,33 @@ input {
   transition: left 0.25s ease, top 0.25s ease, transform 0.2s ease;
 }
 
+.wa-map-stop > span {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
+}
+
 .wa-map-stop--active {
+  border-color: #f26900;
+  background-color: #f26900;
   box-shadow: 0 0 0 4px rgba(242, 105, 0, 0.28);
   transform: scale(1.06);
 }
 
 .wa-map-stop--collected {
-  background-color: #1a2621;
-  color: #ffffff;
+  border-color: #f2d0a8;
+  background-color: #fff7f1;
+  color: #191919;
+}
+
+.wa-map-stop--not-found {
+  border-color: #f26900;
+  background-color: #fff7f1;
+  color: #f26900;
 }
 
 .wa-user-position-badge {
@@ -893,11 +956,11 @@ input {
   margin-top: 21px;
   width: 350px;
   max-width: 100%;
-  min-height: 112px;
+  min-height: 192px;
   border-radius: 16px;
-  border: 1px solid #f2d1b0;
+  border: 1px solid #f2d0a8;
   background-color: #fff7f1;
-  padding: 12px 14px 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
 }
@@ -905,18 +968,18 @@ input {
 .wa-current-stop-card__eyebrow {
   font-family: "Rubik", sans-serif;
   font-weight: 600;
-  font-size: 10px;
-  line-height: 12px;
-  color: #f26900;
+  font-size: 11px;
+  line-height: 13px;
+  color: #7a5a3a;
 }
 
 .wa-current-stop-card__name {
   margin-top: 10px;
-  font-family: "Rubik", sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 700;
-  font-size: 16px;
-  line-height: 19px;
-  color: #000000;
+  font-size: 18px;
+  line-height: 22px;
+  color: #191919;
 }
 
 .wa-current-stop-card__location {
@@ -929,26 +992,27 @@ input {
 }
 
 .wa-current-stop-card__actions {
-  margin-top: 6px;
+  margin-top: 17px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 26px;
+  gap: 8px;
 }
 
 .wa-collected-btn {
-  width: 190px;
-  height: 26px;
-  border-radius: 9px;
+  width: 100%;
+  height: 48px;
+  border-radius: 16px;
   border: none;
   background-color: #f26900;
   color: #000000;
   font-weight: 600;
-  font-size: 12px;
-  line-height: 15px;
+  font-size: 15px;
+  line-height: 18px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  padding-left: 12px;
+  justify-content: center;
+  padding-left: 0;
   cursor: pointer;
 }
 
@@ -957,8 +1021,8 @@ input {
   border: none;
   font-family: "Rubik", sans-serif;
   font-weight: 600;
-  font-size: 11px;
-  line-height: 13px;
+  font-size: 12px;
+  line-height: 15px;
   color: #7a5a3b;
   cursor: pointer;
 }
@@ -971,15 +1035,15 @@ input {
 
 .wa-progress-track {
   width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background-color: #f2d1b0;
+  height: 5px;
+  border-radius: 3px;
+  background-color: #f2d0a8;
   overflow: hidden;
 }
 
 .wa-progress-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   background-color: #f26900;
   transition: width 0.25s ease;
 }

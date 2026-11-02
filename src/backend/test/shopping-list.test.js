@@ -138,4 +138,23 @@ test("reordena paradas pelo caminho mais curto a partir da entrada ou do corredo
     fromHorti.route.stops.map((s) => s.aisle),
     ["Hortifruti", "Corredor 3", "Corredor 1"],
   );
+
+  const afterPassedStops = await calculateStoreRoute(
+    pool,
+    "store-1",
+    [
+      { productId: 10, quantity: 1 },
+      { productId: 30, quantity: 1 },
+      { productId: 20, quantity: 1 },
+    ],
+    {
+      startAisle: "Hortifruti",
+      excludedProductIds: [10],
+    },
+  );
+  assert.deepEqual(
+    afterPassedStops.route.stops.map((stop) => stop.productId),
+    [30, 20],
+  );
+  assert.deepEqual(afterPassedStops.route.excludedProductIds, [10]);
 });

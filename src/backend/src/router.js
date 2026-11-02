@@ -255,6 +255,7 @@ async function route(request, response, context) {
     const result = await calculateStoreRoute(context.pool, storeId, body?.items, {
       startNodeId: body?.startNodeId,
       startAisle: body?.startAisle,
+      excludedProductIds: body?.excludedProductIds,
     });
     if (result.error) {
       sendJson(response, result.status, { error: result.error }, context.frontendOrigin);

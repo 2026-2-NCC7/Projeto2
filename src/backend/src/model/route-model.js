@@ -236,8 +236,14 @@ async function calculateStoreRoute(pool, storeId, rawItems, options = {}) {
     return { error: "Nenhum produto da lista foi encontrado nesta loja.", status: 404 };
   }
 
-  const unlocatedItems = items.filter((item) => item.nodeId === null);
-  const locatedItems = items.filter((item) => item.nodeId !== null);
+  const excludedIds = new Set(
+    (Array.isArray(options?.excludedProductIds) ? options.excludedProductIds : [])
+      .map((id) => Number.parseInt(id, 10))
+      .filter((id) => Number.isFinite(id)),
+  );
+  const remainingItems = items.filter((item) => !excludedIds.has(item.productId));
+  const unlocatedItems = remainingItems.filter((item) => item.nodeId === null);
+  const locatedItems = remainingItems.filter((item) => item.nodeId !== null);
 
   const graphNodesResult = await pool.query(
     `SELECT id, ST_X(coordenadas) AS x, ST_Y(coordenadas) AS y, tipo, nome
@@ -314,6 +320,7 @@ async function calculateStoreRoute(pool, storeId, rawItems, options = {}) {
       locationWarning: unlocatedItems.length
         ? "Alguns produtos não possuem localização ou não estão conectados ao grafo e ficaram fora da rota."
         : null,
+      excludedProductIds: Array.from(excludedIds),
     },
   };
 }

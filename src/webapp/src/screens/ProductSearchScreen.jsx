@@ -36,6 +36,7 @@ export function ProductSearchScreen({
   onSearchChange,
   listItems,
   onAddProduct,
+  onRemoveProduct,
   onNavigate,
 }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -60,7 +61,10 @@ export function ProductSearchScreen({
   const quantityById = useMemo(() => {
     const map = new Map();
     for (const item of listItems) {
-      map.set(Number(item.id), item.quantity || 1);
+      map.set(String(item.id), item.quantity || 1);
+      if (item.name) {
+        map.set(`name:${item.name.toLowerCase()}`, item.quantity || 1);
+      }
     }
     return map;
   }, [listItems]);
@@ -153,7 +157,10 @@ export function ProductSearchScreen({
           <div className="wa-products-list">
             {visibleProducts.length ? (
               visibleProducts.map((product) => {
-                const qtyInList = quantityById.get(Number(product.id)) || 0;
+                const qtyInList =
+                  quantityById.get(String(product.id)) ||
+                  quantityById.get(`name:${(product.name || "").toLowerCase()}`) ||
+                  0;
                 return (
                   <article className="wa-product-card" key={product.id}>
                     <div className="wa-product-card__thumb" aria-hidden="true">
@@ -170,20 +177,32 @@ export function ProductSearchScreen({
                         {formatProductPrice(product)}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="wa-product-card__add-btn"
-                      onClick={() => onAddProduct(product)}
-                      disabled={!product.inStock}
-                      aria-label={`Adicionar ${product.name} à lista`}
-                      title={
-                        qtyInList > 0
-                          ? `Na lista (${qtyInList}) — toque para adicionar mais`
-                          : "Adicionar à lista"
-                      }
-                    >
-                      <span>+</span>
-                    </button>
+                    <div className="wa-product-card__actions">
+                      <button
+                        type="button"
+                        className="wa-product-card__remove-btn"
+                        onClick={() => onRemoveProduct(product)}
+                        disabled={qtyInList === 0}
+                        aria-label={`Remover ${product.name} da lista`}
+                        title={
+                          qtyInList > 0
+                            ? `Remover uma unidade de ${product.name}`
+                            : "Produto ainda não está na lista"
+                        }
+                      >
+                        <span aria-hidden="true">−</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="wa-product-card__add-btn"
+                        onClick={() => onAddProduct(product)}
+                        disabled={!product.inStock}
+                        aria-label={`Adicionar ${product.name} à lista`}
+                        title="Adicionar à lista"
+                      >
+                        <span aria-hidden="true">+</span>
+                      </button>
+                    </div>
                   </article>
                 );
               })
