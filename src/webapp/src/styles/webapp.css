@@ -447,9 +447,9 @@ input {
   background-color: #fff7f2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 9px 6px 14px 5px;
+  padding: 9px 5px 14px;
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
@@ -466,10 +466,12 @@ input {
 }
 
 .wa-category-card__label {
+  width: 100%;
   font-weight: 600;
   font-size: 10px;
   line-height: 12px;
   color: #6b6b6b;
+  text-align: center;
 }
 
 .wa-category-card--active .wa-category-card__label {

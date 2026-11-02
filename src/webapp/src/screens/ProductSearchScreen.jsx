@@ -10,8 +10,14 @@ import {
 const CATEGORIES = [
   { id: "Hortifruti", label: "Hortifruti", icon: "🥬" },
   { id: "Laticínios", label: "Laticínios", icon: "🥛" },
-  { id: "Padaria", label: "Padaria", icon: "🍞" },
+  { id: "Mercearia", label: "Mercearia", icon: "🌾" },
   { id: "Limpeza", label: "Limpeza", icon: "🧼" },
+  { id: "Padaria", label: "Padaria", icon: "🍞" },
+  { id: "Carnes", label: "Carnes", icon: "🥩" },
+  { id: "Bebidas", label: "Bebidas", icon: "🥤" },
+  { id: "Congelados", label: "Congelados", icon: "❄️" },
+  { id: "Higiene", label: "Higiene", icon: "✨" },
+  { id: "Pet", label: "Pet", icon: "🐾" },
 ];
 
 function SearchInputIcon() {
@@ -79,7 +85,7 @@ export function ProductSearchScreen({
             <SearchInputIcon />
           </span>
           <input
-            type="search"
+            type="text"
             className="wa-search-box__input"
             placeholder="Buscar produto ou marca"
             value={searchQuery}
