@@ -56,6 +56,7 @@ async function findProducts(pool, filialId, query, limit) {
 }
 
 async function findStore(pool, filialId) {
+  if (typeof filialId !== "string" || filialId.startsWith("osm-")) return null;
   const result = await pool.query(
     "SELECT id, nome AS name FROM filial WHERE id = $1",
     [filialId],

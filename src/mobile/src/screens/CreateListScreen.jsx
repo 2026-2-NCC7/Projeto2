@@ -36,6 +36,29 @@ const fallbackProducts = [
   { id: 6, name: "Detergente neutro", size: "Frasco · 500 ml", category: "Limpeza", price: 2.49, inStock: true, location: { aisle: "Corredor 4" } },
 ];
 
+const listEmojis = [
+  "😊",
+  "🛍️",
+  "🧹",
+  "🚿",
+  "🧴",
+  "🧸",
+  "👶",
+  "🐶",
+  "🐱",
+  "💡",
+  "🍎",
+  "🍲",
+  "🥦",
+  "🍞",
+  "🥛",
+  "🧃",
+  "☕",
+  "🍪",
+  "💊",
+  "🎉",
+];
+
 const money = (value) => `R$ ${Number(value || 0).toFixed(2).replace(".", ",")}`;
 
 function enrichProduct(product) {
@@ -466,7 +489,8 @@ export function CreateListScreen({ navigation, route }) {
   const { auth, currentStore } = useAuth();
   const listNameInputRef = useRef(null);
   const existingList = route?.params?.list || null;
-  const [listName, setListName] = useState(existingList?.name || "Compra da semana");
+  const [listName, setListName] = useState(existingList?.name || "");
+  const [selectedEmoji, setSelectedEmoji] = useState(existingList?.emoji || listEmojis[0]);
   const [products, setProducts] = useState(() => fallbackProducts.map(enrichProduct));
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -484,6 +508,7 @@ export function CreateListScreen({ navigation, route }) {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [validationError, setValidationError] = useState("");
 
   const activeStoreId = currentStore?.id || DEFAULT_STORE_ID;
 
@@ -559,9 +584,24 @@ export function CreateListScreen({ navigation, route }) {
   const saveList = async () => {
     if (saving) return;
     if (itemCount === 0) {
+      setValidationError("Adicione pelo menos um produto à lista.");
       Alert.alert("Lista vazia", "Adicione pelo menos um produto à lista.");
       return;
     }
+    if (!listName.trim()) {
+      setValidationError("Digite um nome para a lista antes de continuar.");
+      Alert.alert("Nome obrigatório", "Digite um nome para a lista.");
+      return;
+    }
+    if (typeof activeStoreId !== "string" || activeStoreId.startsWith("osm-")) {
+      setValidationError("Selecione um supermercado cadastrado no Ach.ai para criar a lista.");
+      Alert.alert(
+        "Supermercado não cadastrado",
+        "Esse supermercado foi encontrado no mapa, mas ainda não possui catálogo e listas disponíveis no Ach.ai. Selecione um supermercado cadastrado.",
+      );
+      return;
+    }
+    setValidationError("");
     setSaving(true);
     try {
       const { list } = await createShoppingList(auth?.token, activeStoreId, listName);
@@ -613,7 +653,12 @@ export function CreateListScreen({ navigation, route }) {
               <TextInput
                 ref={listNameInputRef}
                 className="flex-1 p-0 font-inter-semibold text-[15px] leading-[18px] text-ink"
-                onChangeText={setListName}
+                onChangeText={(value) => {
+                  setListName(value);
+                  if (validationError) setValidationError("");
+                }}
+                placeholder="Compra da semana"
+                placeholderTextColor="#A6A39C"
                 value={listName}
               />
               <Pressable
@@ -624,6 +669,39 @@ export function CreateListScreen({ navigation, route }) {
                 <PencilIcon />
               </Pressable>
             </View>
+          </View>
+
+          {/* Emojis da lista — uma única linha com rolagem horizontal */}
+          <View className="gap-2">
+            <Text className="font-inter-semibold text-[12px] leading-[15px] text-[#66645F]">Ícone da lista</Text>
+            <ScrollView
+              contentContainerStyle={{ gap: 8, paddingRight: 4 }}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ flexGrow: 0 }}
+            >
+              {listEmojis.map((emoji) => {
+                const isSelected = selectedEmoji === emoji;
+                return (
+                  <Pressable
+                    key={emoji}
+                    accessibilityLabel={`Selecionar emoji ${emoji}`}
+                    accessibilityRole="button"
+                    className={`h-10 w-10 items-center justify-center rounded-[12px] ${
+                      isSelected ? "bg-[#FFF4E8]" : "border border-[#E8E8E0] bg-white"
+                    }`}
+                    onPress={() => setSelectedEmoji(emoji)}
+                    style={isSelected ? { borderWidth: 0 } : undefined}
+                  >
+                    <Text
+                      className={`text-[18px] leading-[22px] ${isSelected ? "text-[#F26900]" : "text-[#1F1F1F]"}`}
+                    >
+                      {emoji}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
 
           {/* Seletor de supermercado — pad 12, gap 12 */}
@@ -783,6 +861,12 @@ export function CreateListScreen({ navigation, route }) {
               {saving ? "Salvando..." : `Criar lista com ${itemCount} itens`}
             </Text>
           </Pressable>
+
+          {validationError ? (
+            <Text className="font-sans text-center text-[11px] leading-[14px] text-[#B05B00]">
+              {validationError}
+            </Text>
+          ) : null}
 
           <Text className="text-center font-sans text-[11px] leading-[13px] text-[#66645F]">
             Você pode editar sua lista depois de criar.

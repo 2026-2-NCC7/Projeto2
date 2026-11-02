@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { useAuth } from "../context/AuthContext";
+import { fetchPreferences, updatePreferences } from "../services/preferences-api";
+import { loadPreferences, savePreferences } from "../storage/preferences-storage";
 
 const stroke = { strokeWidth: 1.7, strokeLinecap: "round", strokeLinejoin: "round" };
 
@@ -172,6 +175,7 @@ function PreferenceToggle({ value, onToggle, label }) {
 
 export function PreferencesScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { auth } = useAuth();
   const [selectedCategories, setSelectedCategories] = useState([
     "Hortifruti",
     "Mercearia",
@@ -179,6 +183,56 @@ export function PreferencesScreen({ navigation }) {
   ]);
   const [productSuggestions, setProductSuggestions] = useState(true);
   const [shoppingNotifications, setShoppingNotifications] = useState(false);
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
+  const [savingPreferences, setSavingPreferences] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    loadPreferences()
+      .then((preferences) => {
+        if (!active || !preferences) return;
+        if (Array.isArray(preferences.selectedCategories)) {
+          setSelectedCategories(preferences.selectedCategories);
+        }
+        if (typeof preferences.productSuggestions === "boolean") {
+          setProductSuggestions(preferences.productSuggestions);
+        }
+        if (typeof preferences.shoppingNotifications === "boolean") {
+          setShoppingNotifications(preferences.shoppingNotifications);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          Alert.alert(
+            "Não foi possível carregar as preferências",
+            "Suas escolhas padrão continuam disponíveis.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingPreferences(false);
+      });
+
+    if (auth?.token) {
+      fetchPreferences(auth.token)
+        .then(async (preferences) => {
+          if (!active || !preferences) return;
+          setSelectedCategories(preferences.selectedCategories);
+          setProductSuggestions(preferences.productSuggestions);
+          setShoppingNotifications(preferences.shoppingNotifications);
+          await savePreferences(preferences);
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (active) setLoadingPreferences(false);
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [auth?.token]);
 
   const toggleCategory = (categoryId) => {
     setSelectedCategories((current) =>
@@ -196,8 +250,37 @@ export function PreferencesScreen({ navigation }) {
     }
   };
 
-  const handleSave = () => {
-    Alert.alert("Preferências salvas", "Suas preferências de compra foram atualizadas.");
+  const handleSave = async () => {
+    if (savingPreferences) return;
+
+    try {
+      setSavingPreferences(true);
+      const nextPreferences = {
+        selectedCategories,
+        productSuggestions,
+        shoppingNotifications,
+      };
+      await savePreferences(nextPreferences);
+      if (auth?.token) {
+        try {
+          const savedPreferences = await updatePreferences(auth.token, nextPreferences);
+          await savePreferences(savedPreferences);
+        } catch {
+          Alert.alert(
+            "Preferências salvas neste dispositivo",
+            "Não foi possível sincronizar com o servidor agora.",
+          );
+        }
+      }
+      navigation.navigate("Profile");
+    } catch {
+      Alert.alert(
+        "Não foi possível salvar",
+        "Tente novamente. Suas alterações ainda não foram aplicadas.",
+      );
+    } finally {
+      setSavingPreferences(false);
+    }
   };
 
   const count = selectedCategories.length;
@@ -320,11 +403,15 @@ export function PreferencesScreen({ navigation }) {
           <View className="gap-3">
             <Pressable
               accessibilityRole="button"
-              className="h-[54px] items-center justify-center rounded-[12px] bg-achai"
+              accessibilityState={{ busy: savingPreferences, disabled: savingPreferences }}
+              className={`h-[54px] items-center justify-center rounded-[12px] ${
+                savingPreferences ? "bg-[#F6A66F]" : "bg-achai"
+              }`}
+              disabled={savingPreferences}
               onPress={handleSave}
             >
               <Text className="font-inter-bold text-[16px] leading-[19px] text-white">
-                Salvar preferências
+                {savingPreferences ? "Salvando..." : "Salvar preferências"}
               </Text>
             </Pressable>
             <Text className="text-center font-sans text-[12px] leading-[18px] text-[#555555]">

@@ -28,6 +28,7 @@ const {
   upsertListItem,
 } = require("./model/shopping-list-model");
 const { calculateListRoute, calculateStoreRoute } = require("./model/route-model");
+const { findPreferences, normalizePreferences, upsertPreferences } = require("./model/preference-model");
 
 async function route(request, response, context) {
   const authorizedContext = {
@@ -184,6 +185,36 @@ async function route(request, response, context) {
     }
     await deactivateAdminAccount(context.pool, payload.sub);
     sendJson(response, 200, { deleted: true }, context.frontendOrigin);
+    return;
+  }
+  if (pathname === "/preferences") {
+    const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+    if (!payload) return;
+
+    if (request.method === "GET") {
+      const preferences = await findPreferences(context.pool, payload.sub);
+      sendJson(response, 200, {
+        preferences: preferences || normalizePreferences(null),
+      }, context.frontendOrigin);
+      return;
+    }
+
+    if (request.method === "PUT") {
+      let body;
+      try {
+        body = await readJsonBody(request, 16 * 1024);
+      } catch (error) {
+        sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+        return;
+      }
+
+      const preferences = await upsertPreferences(context.pool, payload.sub, body);
+      sendJson(response, 200, { preferences }, context.frontendOrigin);
+      return;
+    }
+
+    response.setHeader("Allow", "GET, PUT");
+    sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
     return;
   }
   if (pathname === "/suggestions") {

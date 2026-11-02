@@ -30,7 +30,8 @@ function createApp({
     Promise.resolve(route(request, response, context)).catch((error) => {
       console.error("Falha ao processar requisição:", error);
       if (!response.headersSent) {
-        context.sendJson(response, 500, { error: "Internal server error." });
+        const { sendJson } = require("./utils/http");
+        sendJson(response, 500, { error: "Internal server error." }, requestOrigin);
       }
     });
   });
