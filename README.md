@@ -117,9 +117,42 @@ npm test
 Coloque código do prompt de comnando se for necessário
 ```
 
-### Ambiente local com Docker
+### Ambiente recomendado: Node.js + Supabase
 
-É necessário ter o Docker instalado com o plugin Docker Compose. Na raiz do repositório, execute:
+O fluxo principal de desenvolvimento executa a API diretamente com Node.js e usa uma instância PostgreSQL com PostGIS no Supabase. Essa abordagem funciona também em laboratórios e computadores sem Docker, WSL2 ou privilégios administrativos.
+
+Crie `src/backend/.env` a partir de `src/backend/.env.example` e preencha `DATABASE_URL` com a string de conexão do projeto Supabase. O backend carrega esse arquivo automaticamente e passa explicitamente a URL ao cliente PostgreSQL; não versione nem compartilhe o arquivo. Se preferir, as variáveis de ambiente definidas no sistema continuam tendo prioridade:
+
+```powershell
+cd src/backend
+npm install
+npm run migrate
+npm run dev
+```
+
+Em outro terminal, a API ficará disponível em `http://localhost:3000`. Para uma execução sem modo de observação, use `npm start`; esse comando também aplica as migrations pendentes antes de iniciar a API.
+
+Se o comando apresentar `SELF_SIGNED_CERT_IN_CHAIN`, a rede local provavelmente está interceptando TLS com um certificado próprio. Adicione temporariamente `DATABASE_SSL_REJECT_UNAUTHORIZED=false` ao `.env` apenas em desenvolvimento nessa rede; o backend controla o SSL explicitamente e remove `sslmode` da URI para evitar que o `pg` sobrescreva essa configuração. Essa opção desativa a validação da cadeia do certificado e não deve ser usada em staging ou produção. O padrão do backend continua sendo `true`.
+
+### E-mail de redefinição de senha
+
+O fluxo de redefinição usa tokens próprios armazenados apenas como hash no banco e o Resend para entregar uma mensagem HTML personalizada do Ach.ai. Crie uma conta no Resend, verifique o domínio/remetente e adicione ao `src/backend/.env`:
+
+```dotenv
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=Ach.ai <no-reply@seu-dominio.com>
+PASSWORD_RESET_BASE_URL=https://seu-endereco-publico
+```
+
+Durante o desenvolvimento sem `RESEND_API_KEY`, o backend mantém um fallback que imprime o link no terminal. Com uma API key configurada, a ausência de `RESEND_FROM_EMAIL` ou uma falha da API do Resend faz a solicitação retornar erro, sem fingir que o e-mail foi enviado. Nunca versione a API key.
+
+As migrations ficam em `src/backend/migrations/` e são aplicadas uma única vez, em ordem, com registro na tabela `schema_migrations`. Elas são a fonte oficial do schema: nunca edite uma migration já aplicada; crie uma nova migration numerada. O Supabase compartilhado reduz a duplicação da infraestrutura local, mas não elimina migrations nem seeds.
+
+O banco de desenvolvimento deve ser separado de staging e produção. Seeds de demonstração devem ser idempotentes e executados somente no ambiente apropriado. Testes automatizados não devem depender do banco Supabase compartilhado; use mocks ou um banco de teste isolado.
+
+### Ambiente alternativo com Docker
+
+Docker Compose continua disponível para desenvolvimento local reprodutível, CI e containerização/deploy. Ele não é requisito para executar ou contribuir com a API. Com o Docker instalado, na raiz do repositório execute:
 
 ```sh
 docker compose up --build --wait
@@ -129,7 +162,7 @@ Esse comando inicia o PostgreSQL 16 com PostGIS e a API em `http://localhost:300
 
 As migrations ficam em `src/backend/migrations/` e são aplicadas uma única vez, em ordem, com registro na tabela `schema_migrations`. Para interromper os serviços, execute `docker compose down`. Os dados do banco permanecem no volume `postgres_data`; para removê-los e recriar o banco do zero, use `docker compose down -v`.
 
-As credenciais e portas padrão são destinadas somente ao desenvolvimento. Podem ser alteradas com as variáveis `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` e `API_PORT` no ambiente ou em um arquivo `.env` local.
+As credenciais e portas padrão são destinadas somente ao desenvolvimento local. Podem ser alteradas com as variáveis `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` e `API_PORT` no ambiente ou em um arquivo `.env` local.
 
 ### Login administrativo
 
@@ -139,10 +172,11 @@ Configure `JWT_SECRET` com pelo menos 32 bytes aleatórios em seu arquivo `.env`
 node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"
 ```
 
-Com os serviços em execução, crie um administrador pelo terminal interativo; a senha (mínimo de 12 caracteres) não é exibida nem armazenada em texto puro:
+Com a API em execução e as variáveis do banco carregadas, crie um administrador pelo terminal interativo; a senha (mínimo de 12 caracteres) não é exibida nem armazenada em texto puro:
 
 ```sh
-docker compose exec api npm run create-admin -- admin@example.com
+cd src/backend
+npm run create-admin -- admin@example.com
 ```
 
 Faça login enviando `POST /auth/login` com `Content-Type: application/json` e o corpo `{"email":"admin@example.com","password":"..."}`. Credenciais válidas retornam `token`, `token_type` (`Bearer`) e `expires_in` (segundos). O JWT também contém o papel do usuário em `role`: `admin` para o Administrador master ou `manager` para um Gerente. Credenciais inválidas retornam HTTP 401. O JWT é assinado com `JWT_SECRET` e expira em uma hora.
@@ -195,7 +229,7 @@ npm start
 
 Depois, pressione `a` para abrir no emulador Android, `i` para abrir no simulador iOS ou escaneie o QR Code com o Expo Go. No Android Emulator, a API local é acessada por `10.0.2.2`; em dispositivo físico, use `EXPO_PUBLIC_API_URL=http://<IP-DA-MAQUINA>:3000 npm start`.
 
-Para criar um administrador de teste, execute `docker compose exec api npm run create-admin -- admin@example.com` e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API, navega para a Home após o login e armazena o JWT no armazenamento seguro do dispositivo. A Home consulta `GET /suggestions` e a tela `CatalogScreen`, acessível pela aba Buscar, consulta `GET /stores/{storeId}/products?q=...&limit=...`. O alias legado `GET /catalog?filialId=...&search=...` continua disponível. As migrations `006_demo_catalog.sql` e `007_phase1_catalog_seed.sql` criam duas filiais e 15/10 produtos de demonstração no PostgreSQL; a busca é filtrada por filial, aceita limite, ordena prefixos antes de similaridade e rejeita consultas com menos de dois caracteres. Open Food Facts pode enriquecer produtos por EAN futuramente, mas não deve ser a fonte de preço ou estoque.
+Para criar um administrador de teste, execute `npm run create-admin -- admin@example.com` dentro de `src/backend`, com as variáveis do banco carregadas, e use a senha criada no prompt. A tela nativa envia `email` e `password` para a API, navega para a Home após o login e armazena o JWT no armazenamento seguro do dispositivo. A Home consulta `GET /suggestions` e a tela `CatalogScreen`, acessível pela aba Buscar, consulta `GET /stores/{storeId}/products?q=...&limit=...`. O alias legado `GET /catalog?filialId=...&search=...` continua disponível. As migrations `006_demo_catalog.sql` e `007_phase1_catalog_seed.sql` criam duas filiais e 15/10 produtos de demonstração no PostgreSQL; a busca é filtrada por filial, aceita limite, ordena prefixos antes de similaridade e rejeita consultas com menos de dois caracteres. Open Food Facts pode enriquecer produtos por EAN futuramente, mas não deve ser a fonte de preço ou estoque.
 
 As listas de compras são persistidas pela migration `008_shopping_lists.sql`. O mobile cria uma lista com `POST /stores/{storeId}/lists`, adiciona itens com `POST /lists/{listId}/items`, altera quantidades com `PATCH /lists/{listId}/items/{productId}`, remove itens com `DELETE /lists/{listId}/items/{productId}` e consulta o resumo com `GET /lists/{listId}`. A API valida o proprietário da lista, mantém todos os itens na mesma filial, bloqueia produtos fora de estoque e sinaliza no resumo quando algum produto não possui localização para a rota.
 

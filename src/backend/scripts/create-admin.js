@@ -1,4 +1,6 @@
-const { Pool } = require("pg");
+require("../src/config/load-env");
+
+const { createPool } = require("../src/config/database");
 const { createAdmin, isValidEmail } = require("../src/services/auth-service");
 
 function readHiddenInput(prompt) {
@@ -59,7 +61,7 @@ async function main() {
     throw new Error("Passwords do not match.");
   }
 
-  const pool = new Pool();
+  const pool = createPool();
   try {
     const admin = await createAdmin(pool, email, password);
     if (!admin) {

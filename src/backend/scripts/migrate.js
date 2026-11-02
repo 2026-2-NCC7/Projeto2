@@ -1,6 +1,8 @@
+require("../src/config/load-env");
+
 const { readdir, readFile } = require("node:fs/promises");
 const path = require("node:path");
-const { Pool } = require("pg");
+const { createPool } = require("../src/config/database");
 
 const migrationsDirectory = path.join(__dirname, "..", "migrations");
 const migrationFilePattern = /^\d{3,}_[a-z0-9_-]+\.sql$/i;
@@ -90,7 +92,7 @@ async function runMigrations(pool, directory = migrationsDirectory, connectionOp
 }
 
 async function main() {
-  const pool = new Pool();
+  const pool = createPool();
 
   try {
     await runMigrations(pool);

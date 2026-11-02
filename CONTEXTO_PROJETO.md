@@ -28,7 +28,7 @@ O **Ach.ai** é uma plataforma de navegação indoor e descoberta de produtos pa
 ```
 
 1. **Backend (`src/backend` — Porta `3000`)**:
-   - Node.js 20 (`node:http`) + PostgreSQL 16 com PostGIS (rodando via Docker na porta `3000`, banco na porta `5432`/`5433`).
+   - Node.js 20 (`node:http`) + PostgreSQL com PostGIS. O fluxo recomendado executa a API diretamente com Node.js e usa o Supabase como banco remoto de desenvolvimento; Docker Compose permanece disponível como ambiente local alternativo e reprodutível.
    - Serve dados de lojas (`filial`), catálogo de produtos (`produto`), grafo de navegação indoor (`no_grafo`, `aresta`), listas de compras (`shopping_list`, `shopping_list_item`) e cálculo de menor caminho (`Dijkstra` + *Nearest-Neighbor* em `route-model.js`).
 2. **Dashboard B2B (`src/frontend` — Porta `5173`)**:
    - Aplicação Web (React + Vite) voltada para os **supermercados parceiros** (`admin` / `manager`).
@@ -41,7 +41,7 @@ O **Ach.ai** é uma plataforma de navegação indoor e descoberta de produtos pa
 
 ---
 
-## 2. Estado Atual do Repositório (Branch `webapp`)
+## 2. Estado Atual do Repositório (Branch `mobile`)
 
 ### 2.1. O que já está pronto no Backend (`src/backend`)
 - **Migrations (`001` a `010`)**:
@@ -136,6 +136,9 @@ Aplicação independente em `src/webapp` rodando na porta `5174` com proxy Vite 
   - Nós do WebApp: `2063:2` (Entrada QR), `2063:29` (Busca), `2063:84` (Minha Lista), `2063:122` (Rota Otimizada).
 - **Regras do Repositório**:
   - **Nunca editar migrations SQL já aplicadas** (`001` a `010`); se precisar alterar o schema ou dados, criar `011_*.sql`.
+  - O schema oficial é mantido pelas migrations em `src/backend/migrations/`, aplicadas em ordem e registradas em `schema_migrations`.
+  - O banco compartilhado de desenvolvimento não substitui ambientes separados para staging e produção. Seeds de demonstração devem ser idempotentes e não devem ser executados sem confirmar o ambiente.
+  - Nunca versionar `DATABASE_URL`, `JWT_SECRET` ou qualquer credencial. Cada desenvolvedor deve criar seu `src/backend/.env` a partir de `src/backend/.env.example`.
   - Preservar o arquivo `src/mobile/Venha para a FECAP!.txt`.
   - Validar sempre com `npm --prefix src/backend test`, `cd src/webapp && npm run build` e `git diff --check`.
 
@@ -144,7 +147,13 @@ Aplicação independente em `src/webapp` rodando na porta `5174` com proxy Vite 
 ## 5. Comandos Úteis
 
 ```powershell
-# Subir ou atualizar Banco (PostGIS) + API (:3000) via Docker
+# Fluxo recomendado: API Node.js + banco Supabase
+cd src/backend
+npm install
+npm run migrate
+npm run dev
+
+# Alternativa local: Banco (PostGIS) + API via Docker
 docker compose up -d --build
 
 # Rodar testes do Backend (27 testes)
