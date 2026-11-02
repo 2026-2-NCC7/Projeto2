@@ -1,12 +1,17 @@
 const http = require("node:http");
 const { applyCors, getAllowedOrigin } = require("./middlewares/cors");
 const { route } = require("./router");
+const { createPasswordResetSender } = require("./services/email-service");
 
 function createApp({
   pool,
   jwtSecret = process.env.JWT_SECRET,
-  frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:8081",
+  frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:5174,http://localhost:8081",
   passwordResetBaseUrl = process.env.PASSWORD_RESET_BASE_URL || "http://localhost:8081",
+  passwordResetSender = createPasswordResetSender({
+    apiKey: process.env.RESEND_API_KEY,
+    fromEmail: process.env.RESEND_FROM_EMAIL,
+  }),
 }) {
   const allowedOrigins = frontendOrigin
     .split(",")
@@ -15,7 +20,7 @@ function createApp({
 
   return http.createServer((request, response) => {
     const requestOrigin = getAllowedOrigin(request.headers.origin, allowedOrigins);
-    const context = { pool, jwtSecret, frontendOrigin: requestOrigin, passwordResetBaseUrl };
+    const context = { pool, jwtSecret, frontendOrigin: requestOrigin, passwordResetBaseUrl, passwordResetSender };
     applyCors(response, requestOrigin);
     if (request.method === "OPTIONS") {
       response.writeHead(requestOrigin || request.headers.origin ? 204 : 403);
@@ -25,7 +30,8 @@ function createApp({
     Promise.resolve(route(request, response, context)).catch((error) => {
       console.error("Falha ao processar requisição:", error);
       if (!response.headersSent) {
-        context.sendJson(response, 500, { error: "Internal server error." });
+        const { sendJson } = require("./utils/http");
+        sendJson(response, 500, { error: "Internal server error." }, requestOrigin);
       }
     });
   });

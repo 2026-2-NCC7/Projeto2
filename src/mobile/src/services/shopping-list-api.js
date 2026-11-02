@@ -16,6 +16,22 @@ async function request(path, token, options = {}) {
   return payload;
 }
 
+export async function fetchShoppingLists(token) {
+  const payload = await request("/lists", token, { method: "GET" });
+  return Array.isArray(payload.lists) ? payload.lists : [];
+}
+
+export async function fetchShoppingListSummary(token, listId) {
+  const payload = await request(`/lists/${encodeURIComponent(listId)}`, token, { method: "GET" });
+  return payload.list || null;
+}
+
+export function deleteShoppingList(token, listId) {
+  return request(`/lists/${encodeURIComponent(listId)}`, token, {
+    method: "DELETE",
+  });
+}
+
 export function createShoppingList(token, storeId, name) {
   return request(`/stores/${encodeURIComponent(storeId)}/lists`, token, {
     method: "POST",

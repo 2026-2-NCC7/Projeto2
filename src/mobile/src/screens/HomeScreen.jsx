@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
+import { BottomNavigation } from "../components/BottomNavigation";
 import { useAuth } from "../context/AuthContext";
 import { fetchSuggestions } from "../services/suggestions-api";
 
@@ -9,28 +11,6 @@ function SectionTitle({ children, action }) {
     <View className="flex-row items-center justify-between">
       <Text className="font-inter-semibold text-[19px] text-achai">{children}</Text>
       {action ? <Text className="font-inter-semibold text-xs text-achai">{action}</Text> : null}
-    </View>
-  );
-}
-
-function BottomNavigation({ navigation }) {
-  return (
-    <View className="h-[72px] flex-row border-t border-[#e8e8e0] bg-white">
-      {[
-        ["⌂", "Início", true],
-        ["⌕", "Buscar", false],
-        ["☷", "Listas", false],
-        ["◉", "Perfil", false],
-      ].map(([icon, label, active]) => (
-        <Pressable
-          className="flex-1 items-center pt-2"
-          key={label}
-          onPress={() => label === "Buscar" && navigation.navigate("Catalog")}
-        >
-          <Text className={`text-[21px] ${active ? "text-achai" : "text-[#555]"}`}>{icon}</Text>
-          <Text className={`font-sans text-[11px] ${active ? "text-achai" : "text-[#555]"}`}>{label}</Text>
-        </Pressable>
-      ))}
     </View>
   );
 }
@@ -112,6 +92,7 @@ function SuggestionCard({ suggestion }) {
 }
 
 export function HomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { auth, currentStore } = useAuth();
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
@@ -135,11 +116,27 @@ export function HomeScreen({ navigation }) {
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
-        <View className="px-5 pb-4 pt-12">
-          <Text className="font-brand text-[22px] text-ink">Ach.ai</Text>
-          <Text className="font-sans mt-5 text-[24px] font-extrabold text-achai">Olá!</Text>
-          <Text className="font-sans mt-1 text-[13px] text-[#555]">Vamos facilitar sua próxima compra?</Text>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          className="px-5 pb-4"
+          style={{ paddingTop: Math.max(insets.top, 44) + 20 }}
+        >
+          {/* Cabeçalho padronizado */}
+          <View className="gap-3">
+            <Text className="font-brand text-[22px] leading-[26px] text-ink">Ach.ai</Text>
+            <View className="gap-1">
+              <Text className="font-inter-extrabold text-[25px] leading-[30px] text-achai">
+                Olá!
+              </Text>
+              <Text className="font-sans text-[13px] leading-[16px] text-[#555555]">
+                Vamos facilitar sua próxima compra?
+              </Text>
+            </View>
+          </View>
 
           <Pressable
             className="mt-6 h-[92px] flex-row items-center rounded-[18px] bg-achai px-3.5"
@@ -175,7 +172,7 @@ export function HomeScreen({ navigation }) {
           </View>
         </View>
       </ScrollView>
-      <BottomNavigation navigation={navigation} />
+      <BottomNavigation navigation={navigation} activeTab="Início" />
     </View>
   );
 }

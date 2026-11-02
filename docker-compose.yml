@@ -27,8 +27,10 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_me}
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-}
-      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173,http://localhost:8081}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173,http://localhost:5174,http://localhost:8081}
       PASSWORD_RESET_BASE_URL: ${PASSWORD_RESET_BASE_URL:-http://localhost:8081}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
     ports:
       - "${API_PORT:-3000}:3000"
     depends_on:

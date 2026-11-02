@@ -24,7 +24,9 @@ function hashResetToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-async function requestPasswordReset(pool, email, passwordResetBaseUrl, log = console.log) {
+async function requestPasswordReset(pool, email, passwordResetBaseUrl, sendEmail = async ({ admin, resetUrl }) => {
+  console.log(`Link de redefinição de senha para ${admin.email}: ${resetUrl}`);
+}) {
   const admin = await findActiveAdminByEmail(pool, normalizeEmail(email));
   if (!admin) {
     return;
@@ -37,7 +39,7 @@ async function requestPasswordReset(pool, email, passwordResetBaseUrl, log = con
   await insertResetToken(pool, tokenHash, admin.id, expiresAt);
 
   const resetUrl = `${passwordResetBaseUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
-  log(`Link de redefinição de senha para ${admin.email}: ${resetUrl}`);
+  await sendEmail({ admin, resetUrl, expiresAt });
 }
 
 async function resetPassword(pool, token, password) {

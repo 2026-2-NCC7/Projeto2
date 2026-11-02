@@ -1,10 +1,12 @@
-const { Pool } = require("pg");
+require("./config/load-env");
+
+const { createPool } = require("./config/database");
 const { createApp } = require("./app");
 
 const port = Number(process.env.PORT || 3000);
 
 if (require.main === module) {
-  const pool = new Pool();
+  const pool = createPool();
   const server = createApp({ pool });
   server.listen(port, "0.0.0.0", () => {
     console.log(`API pronta na porta ${port}.`);

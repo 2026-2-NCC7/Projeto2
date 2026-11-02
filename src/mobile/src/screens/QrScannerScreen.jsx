@@ -2,9 +2,18 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { useAuth } from "../context/AuthContext";
 import { validateStore } from "../services/store-api";
 import { parseStoreQrPayload } from "../utils/store-qr";
+
+function ChevronLeftIcon({ size = 22, color = "#FFFFFF" }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path d="M12.5 15L7.5 10L12.5 5" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
 
 function ScanCorners() {
   return (
@@ -28,6 +37,14 @@ export function QrScannerScreen({ navigation }) {
   const [scanError, setScanError] = useState("");
   const [scanning, setScanning] = useState(true);
   const { auth, setCurrentStore } = useAuth();
+
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("Home");
+    }
+  };
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
@@ -79,7 +96,7 @@ export function QrScannerScreen({ navigation }) {
             Acesse as configurações do aparelho para liberar a câmera.
           </Text>
         )}
-        <Pressable className="mt-5 px-4 py-2" onPress={() => navigation.goBack()}>
+        <Pressable className="mt-5 px-4 py-2" onPress={handleGoBack}>
           <Text className="font-inter-semibold text-sm text-white">Voltar</Text>
         </Pressable>
       </View>
@@ -99,8 +116,12 @@ export function QrScannerScreen({ navigation }) {
 
       <View className="flex-1" style={{ paddingTop: insets.top }}>
         <View className="flex-row items-center justify-between px-5 py-4">
-          <Pressable className="h-10 w-10 items-center justify-center" onPress={() => navigation.goBack()}>
-            <Text className="text-[30px] text-white">‹</Text>
+          <Pressable
+            accessibilityLabel="Voltar"
+            className="h-10 w-10 items-center justify-center"
+            onPress={handleGoBack}
+          >
+            <ChevronLeftIcon />
           </Pressable>
           <Text className="font-inter-semibold text-[17px] text-white">Escanear QR Code</Text>
           <View className="h-10 w-10" />

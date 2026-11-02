@@ -42,6 +42,13 @@ async function login(request, response, context) {
       token: createAccessToken(admin, context.jwtSecret),
       token_type: "Bearer",
       expires_in: TOKEN_TTL_SECONDS,
+      user: {
+        id: admin.id,
+        name: admin.display_name || "Marina Ferreira",
+        email: admin.email,
+        role: admin.role,
+        verified: true,
+      },
     }, context.frontendOrigin);
   } catch (error) {
     console.error("Falha no login do administrador:", error);
@@ -57,10 +64,10 @@ async function register(request, response, context) {
       sendJson(response, 400, { error: "Passwords do not match." }, context.frontendOrigin);
       return;
     }
-    const register = context.registrationRole === "manager"
+    const registerFn = context.registrationRole === "manager"
       ? registerUser
       : registerAdmin;
-    const admin = await register(
+    const admin = await registerFn(
       context.pool,
       payload.name,
       payload.email,
@@ -96,7 +103,12 @@ async function forgotPassword(request, response, context) {
   }
 
   try {
-    await requestPasswordReset(context.pool, payload.email, context.passwordResetBaseUrl, console.log);
+    await requestPasswordReset(
+      context.pool,
+      payload.email,
+      context.passwordResetBaseUrl,
+      context.passwordResetSender,
+    );
     sendJson(response, 200, {
       message: "Se o e-mail estiver cadastrado, enviaremos um link de redefinição.",
     }, context.frontendOrigin);
