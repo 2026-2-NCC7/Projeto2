@@ -21,17 +21,20 @@ export function LoginScreen({ navigation, route }) {
   const [password, setPassword] = useState("");
   const [securePassword, setSecurePassword] = useState(true);
   const [error, setError] = useState("");
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (route.params?.registrationCompleted) {
       setError("Conta criada com sucesso. Faça login para continuar.");
+      setRegistrationSuccess(true);
       navigation.setParams({ registrationCompleted: undefined });
     }
   }, [navigation, route.params?.registrationCompleted]);
 
   async function handleSubmit() {
     setError("");
+    setRegistrationSuccess(false);
     if (!email.trim() || !password) {
       setError("Preencha seu e-mail e sua senha.");
       return;
@@ -74,7 +77,7 @@ export function LoginScreen({ navigation, route }) {
           <View className="mt-6 w-[218px] gap-[37px]">
             <TextField autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="E-mail" onChangeText={setEmail} value={email} />
             <TextField label="Senha" onChangeText={setPassword} onToggleSecure={() => setSecurePassword((current) => !current)} secureTextEntry={securePassword} value={password} />
-            <Text className={`-mt-5 min-h-4 text-center text-xs ${error ? "text-red-700" : "text-transparent"}`}>
+            <Text className={`-mt-5 min-h-4 text-center text-xs ${error ? (registrationSuccess ? "text-green-700" : "text-red-700") : "text-transparent"}`}>
               {error || " "}
             </Text>
             <PrimaryButton disabled={submitting} onPress={handleSubmit}>Entrar</PrimaryButton>

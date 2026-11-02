@@ -103,7 +103,12 @@ async function forgotPassword(request, response, context) {
   }
 
   try {
-    await requestPasswordReset(context.pool, payload.email, context.passwordResetBaseUrl, console.log);
+    await requestPasswordReset(
+      context.pool,
+      payload.email,
+      context.passwordResetBaseUrl,
+      context.passwordResetSender,
+    );
     sendJson(response, 200, {
       message: "Se o e-mail estiver cadastrado, enviaremos um link de redefinição.",
     }, context.frontendOrigin);

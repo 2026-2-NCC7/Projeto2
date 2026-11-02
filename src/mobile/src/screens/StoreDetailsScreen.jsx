@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -6,6 +6,7 @@ import { BottomNavigation } from "../components/BottomNavigation";
 import { useAuth } from "../context/AuthContext";
 
 const storeFacadeImage = require("../assets/store/fachada-liberdade.png");
+const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 const productImages = {
   banana: require("../assets/products/banana.png"),
@@ -303,11 +304,34 @@ function ShowcaseProductCard({ product, onPress }) {
   );
 }
 
+function getStoreImageSource(store) {
+  if (!googleMapsApiKey || !Number.isFinite(store?.lat) || !Number.isFinite(store?.lng)) {
+    return { source: storeFacadeImage, isStreetView: false };
+  }
+
+  const params = new URLSearchParams({
+    size: "640x300",
+    location: `${store.lat},${store.lng}`,
+    fov: "90",
+    heading: "0",
+    pitch: "0",
+    key: googleMapsApiKey,
+  });
+
+  return {
+    source: {
+      uri: `https://maps.googleapis.com/maps/api/streetview?${params.toString()}`,
+    },
+    isStreetView: true,
+  };
+}
+
 export function StoreDetailsScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { setCurrentStore } = useAuth();
   const [productQuery, setProductQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [streetViewFailed, setStreetViewFailed] = useState(false);
 
   const store = route?.params?.store || {
     id: "00000000-0000-0000-0000-000000000001",
@@ -315,6 +339,8 @@ export function StoreDetailsScreen({ navigation, route }) {
     address: "Av. da Liberdade, 680",
     distance: "350 m",
     hours: "Aberto · até 22h",
+    lat: -23.5562,
+    lng: -46.6353,
   };
 
   const hoursLabel = useMemo(() => {
@@ -346,6 +372,14 @@ export function StoreDetailsScreen({ navigation, route }) {
     }
     return pairs;
   }, [filteredProducts]);
+  const storeImage = useMemo(() => getStoreImageSource(store), [store]);
+
+  useEffect(() => {
+    setStreetViewFailed(false);
+  }, [store.id]);
+
+  const imageSource =
+    storeImage.isStreetView && !streetViewFailed ? storeImage.source : storeFacadeImage;
 
   const handleBack = () => {
     if (navigation.canGoBack()) {
@@ -420,7 +454,8 @@ export function StoreDetailsScreen({ navigation, route }) {
           >
             <Image
               resizeMode="cover"
-              source={storeFacadeImage}
+              onError={() => setStreetViewFailed(true)}
+              source={imageSource}
               style={{ width: "100%", height: "100%" }}
             />
             <View
@@ -428,7 +463,9 @@ export function StoreDetailsScreen({ navigation, route }) {
               style={{ position: "absolute", right: 10, bottom: 9 }}
             >
               <Text className="font-sans text-[9px] leading-[11px] text-[#66645F]">
-                Imagem ilustrativa
+                {storeImage.isStreetView && !streetViewFailed
+                  ? "Google Street View"
+                  : "Imagem ilustrativa"}
               </Text>
             </View>
           </View>

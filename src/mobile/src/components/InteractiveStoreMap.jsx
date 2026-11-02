@@ -58,12 +58,14 @@ function buildStoreMarkerHtml(store, isSelected) {
   `;
 }
 
-function WebLeafletMap({ userLocation, stores, selectedStoreId, onSelectStore, zoom }) {
+function WebLeafletMap({ userLocation, stores, selectedStoreId, onSelectStore, onMapMove, zoom }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersLayerRef = useRef(null);
   const onSelectRef = useRef(onSelectStore);
   onSelectRef.current = onSelectStore;
+  const onMapMoveRef = useRef(onMapMove);
+  onMapMoveRef.current = onMapMove;
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -91,8 +93,22 @@ function WebLeafletMap({ userLocation, stores, selectedStoreId, onSelectStore, z
 
     markersLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
+    const reportMapMove = () => {
+      const center = map.getCenter();
+      const bounds = map.getBounds();
+      const northEast = bounds.getNorthEast();
+      onMapMoveRef.current?.({
+        lat: center.lat,
+        lng: center.lng,
+        radiusMeters: map.distance(center, northEast),
+        zoom: map.getZoom(),
+      });
+    };
+    map.on("moveend", reportMapMove);
+    map.whenReady(reportMapMove);
 
     return () => {
+      map.off("moveend", reportMapMove);
       map.remove();
       mapRef.current = null;
       markersLayerRef.current = null;
@@ -172,7 +188,7 @@ function WebLeafletMap({ userLocation, stores, selectedStoreId, onSelectStore, z
   );
 }
 
-function NativeWebViewLeafletMap({ userLocation, stores, selectedStoreId, onSelectStore, zoom }) {
+function NativeWebViewLeafletMap({ userLocation, stores, selectedStoreId, onSelectStore, onMapMove, zoom }) {
   const webViewRef = useRef(null);
   const { WebView } = require("react-native-webview");
 
@@ -235,6 +251,22 @@ function NativeWebViewLeafletMap({ userLocation, stores, selectedStoreId, onSele
         map.setView([payload.panTo.lat, payload.panTo.lng], payload.zoom || map.getZoom(), { animate: true });
       }
     };
+    window.reportMapMove = function() {
+      const center = map.getCenter();
+      const bounds = map.getBounds();
+      const northEast = bounds.getNorthEast();
+      if (window.ReactNativeWebView) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({
+      type: 'MAP_MOVED',
+      lat: center.lat,
+      lng: center.lng,
+      radiusMeters: map.distance(center, northEast),
+      zoom: map.getZoom()
+    }));
+      }
+    };
+    map.on('moveend', window.reportMapMove);
+    map.whenReady(window.reportMapMove);
   </script>
 </body>
 </html>`,
@@ -286,7 +318,7 @@ function NativeWebViewLeafletMap({ userLocation, stores, selectedStoreId, onSele
           })),
         };
         webViewRef.current?.injectJavaScript(
-          `window.updateMapState && window.updateMapState(${JSON.stringify(payload)}); true;`,
+          `window.updateMapState && window.updateMapState(${JSON.stringify(payload)}); window.reportMapMove && window.reportMapMove(); true;`,
         );
       }}
       onMessage={(event) => {
@@ -294,6 +326,14 @@ function NativeWebViewLeafletMap({ userLocation, stores, selectedStoreId, onSele
           const data = JSON.parse(event.nativeEvent.data);
           if (data?.type === "SELECT_STORE" && data.id) {
             onSelectStore(data.id);
+          }
+          if (data?.type === "MAP_MOVED" && Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
+            onMapMove?.({
+              lat: data.lat,
+              lng: data.lng,
+              radiusMeters: data.radiusMeters,
+              zoom: data.zoom,
+            });
           }
         } catch {
           // ignore malformed messages
@@ -308,6 +348,7 @@ export function InteractiveStoreMap({
   stores,
   selectedStoreId,
   onSelectStore,
+  onMapMove,
   onLocatePress,
   locating = false,
   scaleLabel = "100 m",
@@ -318,6 +359,7 @@ export function InteractiveStoreMap({
       {Platform.OS === "web" ? (
         <WebLeafletMap
           onSelectStore={onSelectStore}
+          onMapMove={onMapMove}
           selectedStoreId={selectedStoreId}
           stores={stores}
           userLocation={userLocation}
@@ -326,6 +368,7 @@ export function InteractiveStoreMap({
       ) : (
         <NativeWebViewLeafletMap
           onSelectStore={onSelectStore}
+          onMapMove={onMapMove}
           selectedStoreId={selectedStoreId}
           stores={stores}
           userLocation={userLocation}

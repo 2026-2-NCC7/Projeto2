@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { useAuth } from "../context/AuthContext";
+import { loadPrivacyChoices, savePrivacyChoices } from "../storage/privacy-storage";
 
 const SHEET_DISMISS_OFFSET = 460;
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -165,10 +166,42 @@ export function PrivacyScreen({ navigation }) {
   const { auth } = useAuth();
   const [useLocation, setUseLocation] = useState(false);
   const [shareUsageData, setShareUsageData] = useState(false);
+  const [loadingChoices, setLoadingChoices] = useState(true);
+  const [savingChoices, setSavingChoices] = useState(false);
   const [copySheetVisible, setCopySheetVisible] = useState(false);
   const [copySheetStep, setCopySheetStep] = useState("review");
 
   const sheetTranslateY = useRef(new Animated.Value(SHEET_DISMISS_OFFSET)).current;
+
+  useEffect(() => {
+    let active = true;
+
+    loadPrivacyChoices()
+      .then((choices) => {
+        if (!active || !choices) return;
+        if (typeof choices.useLocation === "boolean") {
+          setUseLocation(choices.useLocation);
+        }
+        if (typeof choices.shareUsageData === "boolean") {
+          setShareUsageData(choices.shareUsageData);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          Alert.alert(
+            "Não foi possível carregar as escolhas",
+            "As opções padrão continuam disponíveis.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoadingChoices(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const backdropOpacity = sheetTranslateY.interpolate({
     inputRange: [0, SHEET_DISMISS_OFFSET],
@@ -279,8 +312,21 @@ export function PrivacyScreen({ navigation }) {
     }
   };
 
-  const handleSave = () => {
-    Alert.alert("Escolhas salvas", "Suas preferências de privacidade foram atualizadas.");
+  const handleSave = async () => {
+    if (loadingChoices || savingChoices) return;
+
+    try {
+      setSavingChoices(true);
+      await savePrivacyChoices({ useLocation, shareUsageData });
+      navigation.navigate("Profile");
+    } catch {
+      Alert.alert(
+        "Não foi possível salvar",
+        "Tente novamente. Suas escolhas continuam disponíveis nesta tela.",
+      );
+    } finally {
+      setSavingChoices(false);
+    }
   };
 
   const handleConfirmCopyRequest = () => {
@@ -395,11 +441,15 @@ export function PrivacyScreen({ navigation }) {
             <View className="gap-2.5">
               <Pressable
                 accessibilityRole="button"
-                className="h-[54px] items-center justify-center rounded-[12px] bg-achai"
+                accessibilityState={{ busy: savingChoices, disabled: loadingChoices || savingChoices }}
+                className={`h-[54px] items-center justify-center rounded-[12px] ${
+                  loadingChoices || savingChoices ? "bg-[#F6A66F]" : "bg-achai"
+                }`}
+                disabled={loadingChoices || savingChoices}
                 onPress={handleSave}
               >
                 <Text className="font-inter-bold text-[16px] leading-[19px] text-white">
-                  Salvar escolhas
+                  {savingChoices ? "Salvando..." : "Salvar escolhas"}
                 </Text>
               </Pressable>
               <Text className="text-center font-sans text-[12px] leading-[18px] text-[#555555]">

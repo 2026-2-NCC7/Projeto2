@@ -1,5 +1,5 @@
 import * as Location from "expo-location";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -35,9 +35,15 @@ function SearchIcon() {
   );
 }
 
-function ArrowDownWideNarrowIcon() {
+function SortDirectionIcon({ descending }) {
   return (
-    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
+    <Svg
+      width={12}
+      height={12}
+      viewBox="0 0 12 12"
+      fill="none"
+      style={{ transform: [{ rotate: descending ? "180deg" : "0deg" }] }}
+    >
       <Path
         d="M5.5 7.9998L3.5 9.9996L1.5 7.9998M3.5 9.9996V2.0004M5.5 2.0004H10.5M5.5 4.0002H9M5.5 6H7.5"
         stroke="#555555"
@@ -76,10 +82,12 @@ const DEFAULT_STORES = [
     distance: "350 m",
     distanceMeters: 350,
     address: "Av. da Liberdade, 680",
-    hours: "Aberto · até 22h",
-    isOpen: true,
+    openingTime: "08:00",
+    closingTime: "22:00",
+    hours: "Fecha às 22h",
     lat: -23.5562,
     lng: -46.6353,
+    isAchaiStore: true,
   },
   {
     id: "00000000-0000-0000-0000-000000000002",
@@ -88,18 +96,25 @@ const DEFAULT_STORES = [
     distance: "800 m",
     distanceMeters: 800,
     address: "Rua São Joaquim, 120",
-    hours: "Aberto · até 21h",
-    isOpen: true,
+    openingTime: "08:00",
+    closingTime: "21:00",
+    hours: "Fecha às 21h",
     lat: -23.5594,
     lng: -46.6335,
+    isAchaiStore: true,
   },
 ];
 
 const RADIUS_OPTIONS = [
   { label: "Até 1 km", meters: 1000, zoom: 16, scale: "100 m" },
   { label: "Até 2 km", meters: 2000, zoom: 14, scale: "200 m" },
-  { label: "Até 5 km", meters: 5000, zoom: 12, scale: "500 m" },
 ];
+const MAX_MAP_RADIUS_METERS = 2000;
+const MIN_MAP_ZOOM_FOR_STORES = 14;
+const MAP_REQUEST_BUFFER_METERS = 300;
+const MAP_REQUEST_DEBOUNCE_MS = 350;
+const MAP_CACHE_CELL_METERS = 500;
+const MAP_REQUEST_TIMEOUT_MS = 5000;
 
 function computeDistanceMeters(lat1, lon1, lat2, lon2) {
   const toRad = (deg) => (deg * Math.PI) / 180;
@@ -120,50 +135,104 @@ function formatDistance(meters) {
   return `${(meters / 1000).toFixed(1).replace(".", ",")} km`;
 }
 
-async function fetchNearbyOsmSupermarkets(lat, lng, radiusMeters = 2500) {
+function isStoreOpen(store, now = new Date()) {
+  if (!store.isAchaiStore || !store.openingTime || !store.closingTime) {
+    return false;
+  }
+
+  const [openingHour, openingMinute] = store.openingTime.split(":").map(Number);
+  const [closingHour, closingMinute] = store.closingTime.split(":").map(Number);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const openingMinutes = openingHour * 60 + openingMinute;
+  const closingMinutes = closingHour * 60 + closingMinute;
+
+  if (closingMinutes < openingMinutes) {
+    return currentMinutes >= openingMinutes || currentMinutes <= closingMinutes;
+  }
+
+  return currentMinutes >= openingMinutes && currentMinutes < closingMinutes;
+}
+
+function withCurrentStoreStatus(store) {
+  const isOpen = isStoreOpen(store);
+  return {
+    ...store,
+    isOpen,
+    hours: isOpen
+      ? `Aberto · até ${store.closingTime.replace(":00", "h")}`
+      : `Fechado · abre às ${store.openingTime.replace(":00", "h")}`,
+  };
+}
+
+async function fetchNearbyOsmSupermarkets(
+  lat,
+  lng,
+  radiusMeters = MAX_MAP_RADIUS_METERS,
+  signal,
+) {
+  const query = `[out:json][timeout:5];(node["shop"="supermarket"](around:${Math.round(radiusMeters)},${lat},${lng});way["shop"="supermarket"](around:${Math.round(radiusMeters)},${lat},${lng}););out center 12;`;
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), MAP_REQUEST_TIMEOUT_MS);
+  const requestSignal = signal || timeoutController.signal;
   try {
-    const query = `[out:json][timeout:10];(node["shop"="supermarket"](around:${radiusMeters},${lat},${lng});way["shop"="supermarket"](around:${radiusMeters},${lat},${lng}););out center 8;`;
     const response = await fetch("https://overpass-api.de/api/interpreter", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: `data=${encodeURIComponent(query)}`,
+      signal: requestSignal,
     });
     if (!response.ok) return [];
     const data = await response.json();
     const elements = Array.isArray(data?.elements) ? data.elements : [];
 
     return elements
-      .map((el, idx) => {
-        const sLat = el.lat ?? el.center?.lat;
-        const sLng = el.lon ?? el.center?.lon;
-        if (typeof sLat !== "number" || typeof sLng !== "number") return null;
-        const tags = el.tags || {};
-        const name = tags.name || tags.brand || `Supermercado #${idx + 1}`;
-        const street = tags["addr:street"] || "Endereço próximo";
-        const number = tags["addr:housenumber"] ? `, ${tags["addr:housenumber"]}` : "";
-        const distanceMeters = computeDistanceMeters(lat, lng, sLat, sLng);
+      .map((element, index) => {
+        const storeLat = element.lat ?? element.center?.lat;
+        const storeLng = element.lon ?? element.center?.lon;
+        if (typeof storeLat !== "number" || typeof storeLng !== "number") return null;
+        const tags = element.tags || {};
+        const distanceMeters = computeDistanceMeters(lat, lng, storeLat, storeLng);
         return {
-          id: `osm-${el.id}`,
-          name,
-          address: `${street}${number}`,
-          hours: "Aberto · até 22h",
-          isOpen: true,
-          lat: sLat,
-          lng: sLng,
+          id: `osm-${element.type}-${element.id}`,
+          refNumber: index + 1,
+          name: tags.name || tags.brand || `Supermercado #${index + 1}`,
+          address: `${tags["addr:street"] || "Endereço próximo"}${
+            tags["addr:housenumber"] ? `, ${tags["addr:housenumber"]}` : ""
+          }`,
+          hours: "Horário não informado",
+          isOpen: null,
+          isAchaiStore: false,
+          lat: storeLat,
+          lng: storeLng,
           distanceMeters,
           distance: formatDistance(distanceMeters),
         };
       })
       .filter(Boolean)
       .sort((a, b) => a.distanceMeters - b.distanceMeters)
-      .slice(0, 6)
-      .map((store, index) => ({
-        ...store,
-        refNumber: index + 1,
-      }));
-  } catch {
-    return [];
+      .map((store, index) => ({ ...store, refNumber: index + 1 }));
+  } finally {
+    clearTimeout(timeoutId);
   }
+}
+
+function getMapCacheKey(lat, lng) {
+  const latitudeScale = MAP_CACHE_CELL_METERS / 111_000;
+  const longitudeScale = latitudeScale / Math.max(Math.cos((lat * Math.PI) / 180), 0.1);
+  return `${Math.round(lat / latitudeScale)}:${Math.round(lng / longitudeScale)}`;
+}
+
+function getOfficialStoresForMap(lat, lng) {
+  return DEFAULT_STORES
+    .map((store) => {
+      const distanceMeters = computeDistanceMeters(lat, lng, store.lat, store.lng);
+      return {
+        ...withCurrentStoreStatus(store),
+        distanceMeters,
+        distance: formatDistance(distanceMeters),
+      };
+    })
+    .filter((store) => store.distanceMeters <= MAX_MAP_RADIUS_METERS);
 }
 
 function StoreResultCard({ store, selected, onSelect, onOpenStore }) {
@@ -196,7 +265,13 @@ function StoreResultCard({ store, selected, onSelect, onOpenStore }) {
         </Text>
 
         <View className="flex-row items-center justify-between">
-          <Text className="font-sans text-[10px] leading-[12px] text-[#42734A]">{store.hours}</Text>
+          <Text
+            className={`font-sans text-[10px] leading-[12px] ${
+              store.isOpen ? "text-[#42734A]" : "text-[#D64545]"
+            }`}
+          >
+            {store.hours}
+          </Text>
           <Pressable
             accessibilityLabel={`Ver loja ${store.name}`}
             className="flex-row items-center gap-[3px]"
@@ -222,73 +297,122 @@ export function CatalogScreen({ navigation }) {
   const [editingAddress, setEditingAddress] = useState(false);
   const [addressDraft, setAddressDraft] = useState("Avenida da Liberdade, 542");
   const [userLocation, setUserLocation] = useState(DEFAULT_USER_LOCATION);
-  const [stores, setStores] = useState(DEFAULT_STORES);
-  const [selectedStoreId, setSelectedStoreId] = useState(DEFAULT_STORES[0].id);
+  const [selectedStoreId, setSelectedStoreId] = useState("");
   const [openNowOnly, setOpenNowOnly] = useState(false);
   const [radiusIndex, setRadiusIndex] = useState(1);
+  const [sortDescending, setSortDescending] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [mapZoom, setMapZoom] = useState(RADIUS_OPTIONS[1].zoom);
+  const [mapStores, setMapStores] = useState(() => DEFAULT_STORES.map(withCurrentStoreStatus));
+  const [mapStoresLoading, setMapStoresLoading] = useState(false);
+  const mapRequestTimerRef = useRef(null);
+  const lastMapRequestRef = useRef(null);
+  const mapRequestIdRef = useRef(0);
+  const mapRequestControllerRef = useRef(null);
+  const mapCacheRef = useRef(new Map());
 
   const currentRadius = RADIUS_OPTIONS[radiusIndex];
 
+  useEffect(() => {
+    const refreshStoreStatus = () => {
+      setMapStores((stores) =>
+        stores.map((store) => (store.isAchaiStore ? withCurrentStoreStatus(store) : store)),
+      );
+    };
+
+    refreshStoreStatus();
+    const intervalId = setInterval(refreshStoreStatus, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
   const updateLocationAndStores = async (lat, lng, newAddressLabel) => {
     setUserLocation({ lat, lng });
+    setMapStores(DEFAULT_STORES.map(withCurrentStoreStatus));
+    lastMapRequestRef.current = null;
+    mapRequestIdRef.current += 1;
     if (newAddressLabel) {
       setAddress(newAddressLabel);
       setAddressDraft(newAddressLabel);
     }
 
-    const distanceFromDefault = computeDistanceMeters(
-      DEFAULT_USER_LOCATION.lat,
-      DEFAULT_USER_LOCATION.lng,
-      lat,
-      lng,
-    );
+    setSelectedStoreId("");
+  };
 
-    if (distanceFromDefault <= 1200) {
-      const updatedDefault = DEFAULT_STORES.map((s) => {
-        const dist = computeDistanceMeters(lat, lng, s.lat, s.lng);
-        return {
-          ...s,
-          distanceMeters: dist,
-          distance: s.id === DEFAULT_STORES[0].id && distanceFromDefault < 50 ? "350 m" : formatDistance(dist),
-        };
-      })
-        .sort((a, b) => a.distanceMeters - b.distanceMeters)
-        .map((s, idx) => ({ ...s, refNumber: idx + 1 }));
+  const handleMapMove = ({ lat, lng, zoom }) => {
+    const nextZoom = Number.isFinite(zoom) ? zoom : MIN_MAP_ZOOM_FOR_STORES;
+    setMapZoom(nextZoom);
+    if (mapRequestTimerRef.current) clearTimeout(mapRequestTimerRef.current);
+    mapRequestControllerRef.current?.abort();
+    const requestId = ++mapRequestIdRef.current;
 
-      setStores(updatedDefault);
-      setSelectedStoreId(updatedDefault[0]?.id || "");
+    if (nextZoom < MIN_MAP_ZOOM_FOR_STORES) {
+      lastMapRequestRef.current = null;
+      setMapStores([]);
+      setMapStoresLoading(false);
       return;
     }
 
-    const osmStores = await fetchNearbyOsmSupermarkets(lat, lng, 3000);
-    if (osmStores.length > 0) {
-      setStores(osmStores);
-      setSelectedStoreId(osmStores[0].id);
-    } else {
-      const recalculated = DEFAULT_STORES.map((s, idx) => {
-        const dist = computeDistanceMeters(lat, lng, s.lat, s.lng);
-        return {
-          ...s,
-          refNumber: idx + 1,
-          distanceMeters: dist,
-          distance: formatDistance(dist),
-        };
-      });
-      setStores(recalculated);
-      setSelectedStoreId(recalculated[0].id);
-    }
+    const previous = lastMapRequestRef.current;
+    const movedEnough =
+      !previous ||
+      computeDistanceMeters(previous.lat, previous.lng, lat, lng) >= MAP_REQUEST_BUFFER_METERS;
+    if (!movedEnough) return;
+
+    mapRequestTimerRef.current = setTimeout(async () => {
+      lastMapRequestRef.current = { lat, lng };
+      const officialStores = getOfficialStoresForMap(lat, lng);
+      if (requestId === mapRequestIdRef.current) {
+        setMapStores(officialStores);
+      }
+      setMapStoresLoading(true);
+      const cacheKey = getMapCacheKey(lat, lng);
+      const cachedStores = mapCacheRef.current.get(cacheKey);
+      if (cachedStores) {
+        setMapStores(cachedStores);
+        setMapStoresLoading(false);
+        return;
+      }
+
+      const controller = new AbortController();
+      mapRequestControllerRef.current = controller;
+      const timeoutId = setTimeout(() => controller.abort(), MAP_REQUEST_TIMEOUT_MS);
+      try {
+        const stores = await fetchNearbyOsmSupermarkets(lat, lng, MAX_MAP_RADIUS_METERS, controller.signal);
+        const nextStores = [...officialStores, ...stores].map((store, index) => ({
+            ...store,
+            refNumber: index + 1,
+        }));
+        mapCacheRef.current.set(cacheKey, nextStores);
+        if (requestId === mapRequestIdRef.current) {
+          setMapStores(nextStores);
+        }
+      } catch {
+        if (requestId === mapRequestIdRef.current) {
+          setMapStores(officialStores);
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        if (mapRequestControllerRef.current === controller) {
+          mapRequestControllerRef.current = null;
+        }
+        if (requestId === mapRequestIdRef.current) {
+          setMapStoresLoading(false);
+        }
+      }
+    }, MAP_REQUEST_DEBOUNCE_MS);
   };
 
-  const handleUseMyLocation = async () => {
+  const handleUseMyLocation = async ({ showPermissionAlert = true } = {}) => {
     try {
       setLocating(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permissão de localização",
-          "Ative a permissão de localização para encontrarmos os supermercados mais próximos de você.",
-        );
+        if (showPermissionAlert) {
+          Alert.alert(
+            "Permissão de localização",
+            "Ative a permissão de localização para encontrarmos os supermercados mais próximos de você.",
+          );
+        }
         return;
       }
 
@@ -320,14 +444,23 @@ export function CatalogScreen({ navigation }) {
 
       await updateLocationAndStores(latitude, longitude, formattedAddress);
     } catch {
-      Alert.alert(
-        "Não foi possível obter o GPS",
-        "Verifique se o serviço de localização está ativo no seu dispositivo ou navegador.",
-      );
+      if (showPermissionAlert) {
+        Alert.alert(
+          "Não foi possível obter o GPS",
+          "Verifique se o serviço de localização está ativo no seu dispositivo ou navegador.",
+        );
+      }
     } finally {
       setLocating(false);
     }
   };
+
+  const autoLocationRequestedRef = useRef(false);
+  useEffect(() => {
+    if (autoLocationRequestedRef.current) return;
+    autoLocationRequestedRef.current = true;
+    handleUseMyLocation({ showPermissionAlert: false });
+  }, []);
 
   const handleGeocodeAddress = async () => {
     const query = addressDraft.trim();
@@ -368,8 +501,8 @@ export function CatalogScreen({ navigation }) {
 
   const filteredStores = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return stores.filter((store) => {
-      if (openNowOnly && !store.isOpen) return false;
+    const stores = mapStores.filter((store) => {
+      if (openNowOnly && (!store.isAchaiStore || !store.isOpen)) return false;
       if (store.distanceMeters && store.distanceMeters > currentRadius.meters) return false;
       if (!query) return true;
       return (
@@ -377,7 +510,13 @@ export function CatalogScreen({ navigation }) {
         store.address.toLowerCase().includes(query)
       );
     });
-  }, [stores, search, openNowOnly, currentRadius.meters]);
+
+    return stores.sort((first, second) =>
+      sortDescending
+        ? second.distanceMeters - first.distanceMeters
+        : first.distanceMeters - second.distanceMeters,
+    );
+  }, [mapStores, search, openNowOnly, currentRadius.meters, sortDescending]);
 
   const handleOpenStore = async (store) => {
     await setCurrentStore({ id: store.id, name: store.name });
@@ -402,9 +541,13 @@ export function CatalogScreen({ navigation }) {
           </Text>
 
           {/* Localização atual — gap 7 */}
-          {editingAddress ? (
-            <View className="flex-row items-center gap-2">
-              <View className="h-9 flex-1 flex-row items-center gap-2 rounded-[10px] border border-achai bg-[#FFF4E8] px-2.5">
+          <View
+            className={`h-9 flex-row items-center gap-2 rounded-[10px] border px-2.5 ${
+              editingAddress ? "border-achai bg-[#FFF4E8]" : "border-transparent bg-transparent"
+            }`}
+          >
+            {editingAddress ? (
+              <>
                 <MapPinSmallIcon />
                 <TextInput
                   autoFocus
@@ -416,16 +559,15 @@ export function CatalogScreen({ navigation }) {
                   returnKeyType="search"
                   value={addressDraft}
                 />
-              </View>
-              <Pressable
-                className="h-9 items-center justify-center rounded-[10px] bg-achai px-3"
-                onPress={handleGeocodeAddress}
-              >
-                <Text className="font-inter-semibold text-[12px] text-white">Ir</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View className="flex-row items-center gap-[7px]">
+                <Pressable
+                  className="my-1 h-7 items-center justify-center rounded-[10px] bg-achai px-3"
+                  onPress={handleGeocodeAddress}
+                >
+                  <Text className="font-inter-semibold text-[12px] text-white">Ir</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
               <MapPinSmallIcon />
               <Text
                 className="flex-1 font-inter-medium text-[12px] leading-[15px] text-[#555555]"
@@ -444,8 +586,9 @@ export function CatalogScreen({ navigation }) {
                   Alterar
                 </Text>
               </Pressable>
-            </View>
-          )}
+              </>
+            )}
+          </View>
 
           {/* Campo de busca — h=48, r=14, fill #F8F8F5, border #E8E8E0 */}
           <View className="h-12 flex-row items-center gap-2.5 rounded-[14px] border border-[#E8E8E0] bg-[#F8F8F5] px-3.5">
@@ -474,6 +617,9 @@ export function CatalogScreen({ navigation }) {
               className={`h-8 items-center justify-center rounded-full border px-3 ${
                 openNowOnly ? "border-achai bg-[#FFF4E8]" : "border-[#E8E8E0] bg-white"
               }`}
+              accessibilityLabel="Filtrar supermercados abertos agora"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: openNowOnly }}
               onPress={() => setOpenNowOnly((v) => !v)}
             >
               <Text
@@ -490,6 +636,7 @@ export function CatalogScreen({ navigation }) {
         {/* Mapa interativo real (OpenStreetMap + Leaflet + expo-location) — h=236 */}
         <InteractiveStoreMap
           locating={locating}
+          onMapMove={handleMapMove}
           onLocatePress={handleUseMyLocation}
           onSelectStore={setSelectedStoreId}
           scaleLabel={currentRadius.scale}
@@ -499,29 +646,65 @@ export function CatalogScreen({ navigation }) {
           zoom={currentRadius.zoom}
         />
 
+        {mapZoom < MIN_MAP_ZOOM_FOR_STORES ? (
+          <View className="mx-5 mt-4 rounded-[14px] border border-[#F5B780] bg-[#FFF4E8] p-4">
+            <Text className="font-inter-semibold text-[13px] leading-[16px] text-ink">
+              Aproxime o mapa para até 2 km para ver os supermercados da região.
+            </Text>
+            <Text className="mt-1 font-sans text-[12px] leading-[15px] text-[#66645F]">
+              As lojas são atualizadas quando você termina de mover o mapa.
+            </Text>
+          </View>
+        ) : null}
+
         {/* Supermercados encontrados — pad 16/20/16/20, gap 10 */}
         <View className="gap-2.5 px-5 py-4">
           <View className="flex-row items-center justify-between">
             <Text className="font-inter-extrabold text-[17px] leading-[21px] text-ink">
               {filteredStores.length} supermercados perto
             </Text>
-            <View className="flex-row items-center gap-1">
+            <Pressable
+              accessibilityLabel={`Ordenar por distância: ${
+                sortDescending ? "maior para menor" : "menor para maior"
+              }`}
+              accessibilityRole="button"
+              className="flex-row items-center gap-1"
+              hitSlop={8}
+              onPress={() => setSortDescending((current) => !current)}
+            >
               <Text className="font-inter-semibold text-[10px] leading-[12px] text-[#555555]">
                 Distância
               </Text>
-              <ArrowDownWideNarrowIcon />
-            </View>
+              <SortDirectionIcon descending={sortDescending} />
+            </Pressable>
           </View>
 
-          {filteredStores.map((store) => (
-            <StoreResultCard
-              key={store.id}
-              onOpenStore={() => handleOpenStore(store)}
-              onSelect={() => setSelectedStoreId(store.id)}
-              selected={store.id === selectedStoreId}
-              store={store}
-            />
-          ))}
+          {mapStoresLoading ? (
+            <Text className="font-sans text-[12px] leading-[15px] text-[#66645F]">
+              Atualizando resultados da região...
+            </Text>
+          ) : null}
+
+          {filteredStores.length > 0 ? (
+            filteredStores.map((store) => (
+              <StoreResultCard
+                key={store.id}
+                onOpenStore={() => handleOpenStore(store)}
+                onSelect={() => setSelectedStoreId(store.id)}
+                selected={store.id === selectedStoreId}
+                store={store}
+              />
+            ))
+          ) : (
+            <View className="rounded-[14px] border border-[#E8E8E0] bg-[#F8F8F5] p-4">
+              <Text className="font-inter-semibold text-[13px] leading-[16px] text-ink">
+                Nenhum supermercado encontrado nessa região.
+              </Text>
+              <Text className="mt-1 font-sans text-[12px] leading-[15px] text-[#66645F]">
+                Mova o mapa ou altere o endereço para procurar novamente.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
