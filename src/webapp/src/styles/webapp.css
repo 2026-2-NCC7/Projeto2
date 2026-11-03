@@ -797,9 +797,9 @@ input {
   margin-top: 20px;
   width: 350px;
   max-width: 100%;
-  height: 355px;
-  border-radius: 18px;
-  border: 1px solid #f2d1b0;
+  height: 320px;
+  border-radius: 16px;
+  border: 1px solid #f2d0a8;
   background-color: #fff7f1;
   position: relative;
   overflow: hidden;
@@ -807,12 +807,12 @@ input {
 
 .wa-map-aisle {
   position: absolute;
-  top: 28px;
-  width: 52px;
-  height: 245px;
-  border-radius: 7px;
-  border: none;
-  background-color: #f2d1b0;
+  top: 62px;
+  width: 36px;
+  height: 190px;
+  border-radius: 6px;
+  border: 1px solid #f2d0a8;
+  background-color: #fff7f1;
   padding: 10px 2px 0;
   text-align: center;
   display: flex;
@@ -820,16 +820,17 @@ input {
   align-items: center;
   justify-content: flex-start;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .wa-map-aisle:hover {
-  opacity: 0.9;
+  border-color: rgba(242, 105, 0, 0.45);
 }
 
-.wa-map-aisle:focus-visible {
-  outline: 2px solid #f26900;
-  outline-offset: 2px;
+.wa-map-aisle--current {
+  border-color: #f26900;
+  border-width: 2px;
+  background-color: #fff7f1;
 }
 
 .wa-map-aisle__label {
@@ -840,7 +841,6 @@ input {
   line-height: 12px;
   color: #7a5a3b;
   white-space: pre-line;
-  user-select: none;
 }
 
 .wa-route-svg {
@@ -857,10 +857,9 @@ input {
   width: 30px;
   height: 30px;
   border-radius: 15px;
-  border: none;
-  background-color: #f26900;
+  border: 1.5px solid #f2d0a8;
+  background-color: #fff7f1;
   color: #000000;
-  font-family: "Rubik", sans-serif;
   font-weight: 600;
   font-size: 14px;
   line-height: 17px;
@@ -869,12 +868,7 @@ input {
   justify-content: center;
   cursor: pointer;
   z-index: 2;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.wa-map-stop:hover {
-  transform: scale(1.08);
+  transition: left 0.25s ease, top 0.25s ease, transform 0.2s ease;
 }
 
 .wa-map-stop > span {
@@ -888,19 +882,85 @@ input {
 }
 
 .wa-map-stop--active {
-  box-shadow: 0 0 0 4px rgba(242, 105, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
-  transform: scale(1.1);
+  border-color: #f26900;
+  background-color: #f26900;
+  box-shadow: 0 0 0 4px rgba(242, 105, 0, 0.28);
+  transform: scale(1.06);
+}
+
+.wa-map-stop--collected {
+  border-color: #f2d0a8;
+  background-color: #fff7f1;
+  color: #191919;
+}
+
+.wa-map-stop--not-found {
+  border-color: #f26900;
+  background-color: #fff7f1;
+  color: #f26900;
+}
+
+.wa-user-position-badge {
+  position: absolute;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background-color: #191919;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  transition: left 0.28s ease, top 0.28s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.wa-user-position-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #f26900;
+}
+
+.wa-map-footer-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.wa-map-zone-tag {
+  font-family: "Rubik", sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: #7a5a3b;
+  background-color: rgba(242, 209, 176, 0.55);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.wa-map-anchor-hint {
+  font-size: 9px;
+  color: #8a5a2b;
+  font-weight: 500;
 }
 
 .wa-current-stop-card {
   margin-top: 21px;
   width: 350px;
   max-width: 100%;
-  min-height: 112px;
-  border-radius: 18px;
-  border: 1px solid #f2d1b0;
+  min-height: 192px;
+  border-radius: 16px;
+  border: 1px solid #f2d0a8;
   background-color: #fff7f1;
-  padding: 14px 17px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
 }
@@ -914,7 +974,7 @@ input {
 }
 
 .wa-current-stop-card__name {
-  margin-top: 4px;
+  margin-top: 10px;
   font-family: "Inter", sans-serif;
   font-weight: 700;
   font-size: 18px;
@@ -923,7 +983,7 @@ input {
 }
 
 .wa-current-stop-card__location {
-  margin-top: 4px;
+  margin-top: 5px;
   font-family: "Rubik", sans-serif;
   font-weight: 400;
   font-size: 13px;
@@ -932,69 +992,58 @@ input {
 }
 
 .wa-current-stop-card__actions {
-  margin-top: 12px;
+  margin-top: 17px;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 26px;
+  gap: 8px;
 }
 
 .wa-collected-btn {
-  width: 190px;
-  height: 26px;
-  border-radius: 13px;
+  width: 100%;
+  height: 48px;
+  border-radius: 16px;
   border: none;
   background-color: #f26900;
   color: #000000;
-  font-family: "Rubik", sans-serif;
   font-weight: 600;
-  font-size: 11px;
-  line-height: 13px;
+  font-size: 15px;
+  line-height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-left: 0;
   cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.wa-collected-btn:hover {
-  opacity: 0.9;
 }
 
 .wa-report-link {
   background: none;
   border: none;
-  padding: 0;
   font-family: "Rubik", sans-serif;
   font-weight: 600;
   font-size: 12px;
   line-height: 15px;
   color: #7a5a3b;
-  text-decoration: underline;
   cursor: pointer;
 }
 
-.wa-report-link:hover {
-  color: #f26900;
-}
-
 .wa-progress-section {
-  margin-top: 16px;
+  margin-top: 22px;
   width: 350px;
   max-width: 100%;
 }
 
 .wa-progress-track {
   width: 100%;
-  height: 8px;
-  border-radius: 4px;
-  background-color: #f2d1b0;
+  height: 5px;
+  border-radius: 3px;
+  background-color: #f2d0a8;
   overflow: hidden;
 }
 
 .wa-progress-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   background-color: #f26900;
   transition: width 0.25s ease;
 }
