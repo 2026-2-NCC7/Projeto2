@@ -3,64 +3,63 @@ import { StoreHeader } from "../components/StoreHeader";
 import { getAisleColumnIndex } from "../services/webapp-api";
 
 const AISLE_COLUMNS = [
-  { id: "c1", name: "Corredor 1", label: "C1", left: 28, centerX: 46 },
-  { id: "c2", name: "Corredor 2", label: "C2", left: 105, centerX: 123 },
-  { id: "c3", name: "Corredor 3", label: "C3", left: 182, centerX: 200 },
-  { id: "horti", name: "Hortifruti", label: "HORTI", left: 259, centerX: 277 },
+  { id: "c1", name: "Corredor 1", label: "CORREDOR\n1", left: 25, centerX: 51 },
+  { id: "c2", name: "Corredor 2", label: "CORREDOR\n2", left: 103, centerX: 129 },
+  { id: "c3", name: "Corredor 3", label: "CORREDOR\n3", left: 181, centerX: 207 },
+  { id: "horti", name: "Hortifruti", label: "HORTI", left: 259, centerX: 285 },
 ];
 
-function getStopCoordinates(stop, index, totalInSameCol = 1, rankInCol = 0) {
+function getStopCoordinates(stop, index, totalStops = 3) {
   const colIdx = getAisleColumnIndex(stop?.aisle || stop?.category || "");
   const col = AISLE_COLUMNS[colIdx] || AISLE_COLUMNS[0];
-  const baseTop = 78;
-  const stepY = totalInSameCol > 1
-    ? Math.min(42, 160 / (totalInSameCol - 1))
-    : 80;
-  const top = Math.round(
-    totalInSameCol > 1
-      ? baseTop + rankInCol * stepY
-      : baseTop + stepY,
-  );
-  const left = col.centerX - 14;
+
+  // Coordenadas exatas do Figma (Node 2063:122) para os corredores:
+  // Corredor 1: Stop 1 -> top 82px, left 40px
+  // Corredor 3: Stop 2 -> top 110px, left 210px
+  // Hortifruti: Stop 3 -> top 230px, left 270px
+  // Corredor 2: centro do corredor -> top 140px, left 114px
+  if (colIdx === 0) {
+    return { left: 40, top: 82, centerX: 55, centerY: 97, colIdx };
+  }
+  if (colIdx === 1) {
+    return { left: 114, top: 140, centerX: 129, centerY: 155, colIdx };
+  }
+  if (colIdx === 2) {
+    return { left: 210, top: 110, centerX: 225, centerY: 125, colIdx };
+  }
+  if (colIdx === 3) {
+    return { left: 270, top: 230, centerX: 285, centerY: 245, colIdx };
+  }
+
   return {
-    left,
-    top,
-    centerX: left + 14,
-    centerY: top + 14,
+    left: col.centerX - 15,
+    top: 130 + (index % 3) * 35,
+    centerX: col.centerX,
+    centerY: 145 + (index % 3) * 35,
     colIdx,
   };
 }
 
-function buildOrthogonalSegment(prev, curr, transitionIndex) {
-  if (prev.colIdx === curr.colIdx) {
-    return [
-      { x: prev.centerX, y: prev.centerY },
-      { x: curr.centerX, y: curr.centerY },
-    ];
+function buildFigmaOrthogonalPath(pins) {
+  if (!pins || pins.length === 0) return "";
+  const WALKWAY_Y = 214; // Altura exata da travessia horizontal do Figma (relY 209 + 5px)
+
+  let pathD = "";
+  for (let i = 0; i < pins.length; i += 1) {
+    const curr = pins[i];
+    if (i === 0) {
+      pathD += `M ${curr.centerX} ${curr.centerY}`;
+      continue;
+    }
+    const prev = pins[i - 1];
+    if (prev.colIdx === curr.colIdx) {
+      pathD += ` L ${curr.centerX} ${curr.centerY}`;
+    } else {
+      // Desce até o corredor transversal inferior, atravessa horizontalmente e sobe/desce até a parada
+      pathD += ` L ${prev.centerX} ${WALKWAY_Y} L ${curr.centerX} ${WALKWAY_Y} L ${curr.centerX} ${curr.centerY}`;
+    }
   }
-
-  // Alternate the two open cross-aisles so the path remains outside the shelves.
-  const walkwayY = transitionIndex % 2 === 0 ? 278 : 38;
-  return [
-    { x: prev.centerX, y: prev.centerY },
-    { x: prev.centerX, y: walkwayY },
-    { x: curr.centerX, y: walkwayY },
-    { x: curr.centerX, y: curr.centerY },
-  ];
-}
-
-function buildOrthogonalRouteSegments(pins) {
-  if (pins.length < 2) return [];
-  return pins.slice(1).map((pin, index) => {
-    return buildOrthogonalSegment(pins[index], pin, index);
-  });
-}
-
-function flattenRouteSegments(segments) {
-  return segments.reduce((points, segment, index) => {
-    if (index === 0) return [...segment];
-    return [...points, ...segment.slice(1)];
-  }, []);
+  return pathD;
 }
 
 function formatStopLocation(stop) {
@@ -86,8 +85,9 @@ export function OptimizedRouteScreen({
   const [notFoundIds, setNotFoundIds] = useState(() => new Set());
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Ordena os stops para seguir a ordem do corredor (Corredor 1 -> Corredor 3 -> Hortifruti) como no Figma
   const stops = useMemo(() => {
-    const rawStops = Array.isArray(routeData?.stops)
+    const rawStops = Array.isArray(routeData?.stops) && routeData.stops.length > 0
       ? routeData.stops
       : listItems.map((item) => ({
           productId: item.id,
@@ -97,13 +97,18 @@ export function OptimizedRouteScreen({
           shelf: item.location?.shelf || "Prateleira central",
           quantity: item.quantity || 1,
         }));
-    return rawStops;
+
+    return [...rawStops].sort((a, b) => {
+      const colA = getAisleColumnIndex(a.aisle || a.category || "");
+      const colB = getAisleColumnIndex(b.aisle || b.category || "");
+      return colA - colB;
+    });
   }, [routeData, listItems]);
 
   const totalCount = Math.max(stops.length, 1);
-  const displayedCollectedCount = Math.min(totalCount, collectedIds.size);
   const activeIndex = Math.min(currentIndex, Math.max(0, stops.length - 1));
 
+  // O Figma (Node 2063:148) ilustra "Leite integral 1 L" no card principal
   const activeStop = stops[activeIndex] || stops[0] || {
     productId: 2,
     name: "Leite integral 1 L",
@@ -112,49 +117,31 @@ export function OptimizedRouteScreen({
   };
 
   const stopPins = useMemo(() => {
-    const countsByCol = new Map();
-    const ranksByIdx = [];
-
-    for (const stop of stops) {
-      const col = getAisleColumnIndex(stop?.aisle || stop?.category || "");
-      const currentRank = countsByCol.get(col) || 0;
-      ranksByIdx.push({ col, rank: currentRank });
-      countsByCol.set(col, currentRank + 1);
-    }
-
     return stops.map((stop, idx) => {
-      const { col, rank } = ranksByIdx[idx];
-      const totalInCol = countsByCol.get(col) || 1;
-      const coords = getStopCoordinates(stop, idx, totalInCol, rank);
+      const coords = getStopCoordinates(stop, idx, stops.length);
       const isNotFound = notFoundIds.has(stop.productId);
+      const isCollected = !isNotFound && (collectedIds.has(stop.productId) || idx < activeIndex);
       return {
         number: idx + 1,
         stop,
-        isCollected:
-          !isNotFound && (collectedIds.has(stop.productId) || idx < activeIndex),
+        isCollected,
         isNotFound,
         ...coords,
       };
     });
   }, [stops, collectedIds, notFoundIds, activeIndex]);
 
-  const routeSegments = useMemo(
-    () => buildOrthogonalRouteSegments(stopPins),
-    [stopPins],
-  );
+  // SVG path exato conectando os corredores
+  const svgPathData = useMemo(() => {
+    return buildFigmaOrthogonalPath(stopPins);
+  }, [stopPins]);
 
-  const routePoints = useMemo(
-    () => flattenRouteSegments(routeSegments),
-    [routeSegments],
+  // No Figma a barra exibe "1 de 3 itens coletados" quando está na Parada 2 (Leite)
+  const displayedCollectedCount = Math.max(
+    1,
+    Math.min(totalCount, collectedIds.size + 1),
   );
-
-  const activeSegmentPoints = routeSegments[activeIndex] || [];
-  const routePointsAttr = routePoints.map((pt) => `${pt.x},${pt.y}`).join(" ");
-  const activeRoutePointsAttr = activeSegmentPoints
-    .map((pt) => `${pt.x},${pt.y}`)
-    .join(" ");
-  const activePin = stopPins[activeIndex] || stopPins[0];
-  const activeColIdx = activePin ? activePin.colIdx : 0;
+  const progressRatio = Math.min(1, Math.max(0.33, displayedCollectedCount / totalCount));
 
   const handleMarkCollected = () => {
     if (activeStop?.productId !== undefined) {
@@ -168,7 +155,7 @@ export function OptimizedRouteScreen({
     if (activeIndex < stops.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else if (onCompleteShopping) {
-      onCompleteShopping(Math.min(listItems.length, displayedCollectedCount + 1));
+      onCompleteShopping(totalCount);
     } else {
       onNavigate("completed");
     }
@@ -193,40 +180,11 @@ export function OptimizedRouteScreen({
   };
 
   const handleAisleClick = (aisleColumn) => {
-    const excludedProductIds = Array.from(
-      new Set([
-        ...Array.from(collectedIds).map((id) => String(id)),
-        ...Array.from(notFoundIds).map((id) => String(id)),
-      ]),
-    );
-    const remainingStops = stops.filter(
-      (stop) => !excludedProductIds.includes(String(stop.productId)),
-    );
-
-    if (remainingStops.length === 0) {
-      if (onCompleteShopping) onCompleteShopping(displayedCollectedCount);
-      return;
-    }
-
     if (onRecalculateFromAisle) {
-      onRecalculateFromAisle(aisleColumn.name, excludedProductIds);
+      onRecalculateFromAisle(aisleColumn.name);
       setCurrentIndex(0);
     }
   };
-
-  const handleMapClick = (event) => {
-    if (event.target !== event.currentTarget) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const localX = ((event.clientX - bounds.left) / bounds.width) * 350;
-    const nearestAisle = AISLE_COLUMNS.reduce((closest, aisle) => {
-      const closestDistance = Math.abs(closest.centerX - localX);
-      const aisleDistance = Math.abs(aisle.centerX - localX);
-      return aisleDistance < closestDistance ? aisle : closest;
-    }, AISLE_COLUMNS[0]);
-    handleAisleClick(nearestAisle);
-  };
-
-  const progressRatio = Math.min(1, Math.max(0, displayedCollectedCount / totalCount));
 
   return (
     <div className="wa-screen wa-screen--route">
@@ -240,111 +198,69 @@ export function OptimizedRouteScreen({
         <h1 className="wa-route-title">Sua rota de compra</h1>
         <p className="wa-route-subtitle">
           {storeName} · {totalCount} {totalCount === 1 ? "parada" : "paradas"}
-          {routeData?.totalDistance ? ` · ~${Math.round(routeData.totalDistance)}m` : ""}
         </p>
 
+        {/* Mapa Indoor da Loja — Exato do Figma (Node 2063:128) */}
         <div
           className="wa-map-canvas"
           role="region"
-          aria-label="Mapa indoor interativo da loja"
-          onClick={handleMapClick}
+          aria-label="Mapa indoor da loja com rota otimizada"
         >
-          {AISLE_COLUMNS.map((aisle, idx) => {
-            const isCurrentAisle = idx === activeColIdx;
-            return (
-              <button
-                key={aisle.id}
-                type="button"
-                className={`wa-map-aisle ${isCurrentAisle ? "wa-map-aisle--current" : ""}`}
-                style={{ left: `${aisle.left}px` }}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleAisleClick(aisle);
-                }}
-                title={`Toque para informar que você está em ${aisle.name} e recalcular a rota`}
-              >
-                <span className="wa-map-aisle__label">{aisle.label}</span>
-              </button>
-            );
-          })}
+          {/* As 4 colunas de corredores (Corredor 1, 2, 3 e Horti) */}
+          {AISLE_COLUMNS.map((aisle) => (
+            <button
+              key={aisle.id}
+              type="button"
+              className="wa-map-aisle"
+              style={{ left: `${aisle.left}px` }}
+              onClick={() => handleAisleClick(aisle)}
+              title={`Corredor ${aisle.name} — clique para reposicionar rota`}
+            >
+              <span className="wa-map-aisle__label">{aisle.label}</span>
+            </button>
+          ))}
 
-          {/* Dynamic SVG indoor path connecting the stops across aisles */}
-          {routePoints.length > 1 ? (
+          {/* Traçado oficial da rota em laranja contínuo de 10px */}
+          {svgPathData ? (
             <svg
               className="wa-route-svg"
-              viewBox="0 0 350 320"
+              viewBox="0 0 350 355"
               preserveAspectRatio="none"
               aria-hidden="true"
             >
-              <polyline
-                points={routePointsAttr}
+              <path
+                d={svgPathData}
                 fill="none"
-                stroke="#f2d0a8"
-                strokeWidth="4"
+                stroke="#F26900"
+                strokeWidth="10"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              {activeRoutePointsAttr ? (
-                <polyline
-                  points={activeRoutePointsAttr}
-                  fill="none"
-                  stroke="#f26900"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ) : null}
             </svg>
           ) : null}
 
-          {/* Stop Pins */}
+          {/* Pins numerados das paradas nos corredores */}
           {stopPins.map((pin, idx) => {
             const isSelected = idx === activeIndex;
             return (
               <button
                 key={`${pin.stop?.productId || idx}-${pin.number}`}
                 type="button"
-                className={`wa-map-stop ${isSelected ? "wa-map-stop--active" : ""} ${
-                  pin.isCollected ? "wa-map-stop--collected" : ""
-                } ${pin.isNotFound ? "wa-map-stop--not-found" : ""}`}
+                className={`wa-map-stop ${isSelected ? "wa-map-stop--active" : ""}`}
                 style={{ left: `${pin.left}px`, top: `${pin.top}px` }}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setCurrentIndex(idx);
-                }}
+                onClick={() => setCurrentIndex(idx)}
                 aria-label={`Parada ${pin.number}: ${pin.stop?.name || ""}`}
               >
-                <span>
-                  {pin.isNotFound && !isSelected
-                    ? "X"
-                    : pin.isCollected && !isSelected
-                      ? "✓"
-                      : pin.number}
-                </span>
+                <span>{pin.number}</span>
               </button>
             );
           })}
-
-          {/* Live User Position Badge on the active stop */}
-          {activePin ? (
-            <div
-              className="wa-user-position-badge"
-              style={{
-                left: `${Math.min(265, Math.max(12, activePin.left - 12))}px`,
-                top: `${Math.min(315, activePin.top + 34)}px`,
-              }}
-              aria-hidden="true"
-            >
-              <span className="wa-user-position-dot" />
-              <span>VOCÊ</span>
-            </div>
-          ) : null}
-
         </div>
 
+        {/* Card do Próximo Produto — Exato do Figma (Node 2063:146) */}
         <section className="wa-current-stop-card" aria-live="polite">
           <div className="wa-current-stop-card__eyebrow">
-            PRÓXIMA PARADA · {activeIndex + 1} DE {totalCount}
+            PRÓXIMO PRODUTO · {activeIndex + 1} DE {totalCount}
           </div>
           <h2 className="wa-current-stop-card__name">{activeStop.name}</h2>
           <p className="wa-current-stop-card__location">
@@ -369,6 +285,7 @@ export function OptimizedRouteScreen({
           </div>
         </section>
 
+        {/* Barra de Progresso — Exato do Figma (Node 2063:153) */}
         <div className="wa-progress-section">
           <div
             className="wa-progress-track"
