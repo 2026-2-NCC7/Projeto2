@@ -352,7 +352,12 @@ export function getAisleColumnIndex(aisleName = "") {
 }
 
 export function buildLocalFallbackRoute(store, listItems, options = {}) {
-  const rawStops = listItems.map((item) => {
+  const excludedIds = new Set(
+    (options?.excludedProductIds || []).map((id) => String(id)),
+  );
+  const rawStops = listItems.filter(
+    (item) => !excludedIds.has(String(item.id)),
+  ).map((item) => {
     const loc = inferProductLocation(item);
     const aisleLabel = loc.aisle === "Setor A" ? "Hortifruti" : loc.aisle;
     return {
@@ -416,6 +421,7 @@ export async function generateOptimizedRoute(storeId, store, listItems, options 
         })),
         startAisle: options?.startAisle || undefined,
         startNodeId: options?.startNodeId || undefined,
+        excludedProductIds: options?.excludedProductIds || undefined,
       }),
     });
     if (!response.ok) throw new Error("Route request failed");

@@ -133,6 +133,27 @@ export function App() {
     });
   };
 
+  const handleRemoveProduct = (product) => {
+    setListItems((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) =>
+          String(item.id) === String(product.id) ||
+          (item.name || "").toLowerCase() === (product.name || "").toLowerCase(),
+      );
+      if (existingIndex < 0) return prev;
+
+      const existingItem = prev[existingIndex];
+      const quantity = existingItem.quantity || 1;
+      if (quantity > 1) {
+        const next = [...prev];
+        next[existingIndex] = { ...existingItem, quantity: quantity - 1 };
+        return next;
+      }
+
+      return prev.filter((_, index) => index !== existingIndex);
+    });
+  };
+
   const handleToggleChecked = (productId) => {
     setListItems((prev) => {
       const target = prev.find((item) => Number(item.id) === Number(productId));
@@ -187,6 +208,7 @@ export function App() {
             onSearchChange={setSearchQuery}
             listItems={listItems}
             onAddProduct={handleAddProduct}
+            onRemoveProduct={handleRemoveProduct}
             onNavigate={setCurrentScreen}
           />
         )}
@@ -210,8 +232,11 @@ export function App() {
             routeData={routeData}
             listItems={listItems}
             onNavigate={setCurrentScreen}
-            onRecalculateFromAisle={(aisleName) =>
-              handleGenerateRoute({ startAisle: aisleName })
+            onRecalculateFromAisle={(aisleName, excludedProductIds) =>
+              handleGenerateRoute({
+                startAisle: aisleName,
+                excludedProductIds,
+              })
             }
             onCompleteShopping={(count) => {
               setCompletedCount(count);
