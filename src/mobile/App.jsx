@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useFonts } from "expo-font";
@@ -67,9 +68,9 @@ const linking = {
 };
 
 export default function App() {
-  const [fontsLoaded] = useFonts(appFonts);
+  const [fontsLoaded, fontError] = useFonts(Platform.OS === "web" ? {} : appFonts);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontError && Platform.OS !== "web") {
     return null;
   }
 
