@@ -17,7 +17,7 @@ const {
   updateAdminPassword,
   updateAdminProfile,
 } = require("./model/admin-model");
-const { findProducts, findStore } = require("./model/catalog-model");
+const { findProducts, findStore, listStores } = require("./model/catalog-model");
 const {
   createList,
   deleteList,
@@ -25,6 +25,7 @@ const {
   listUserLists,
   removeListItem,
   updateListItem,
+  updateListMetadata,
   upsertListItem,
 } = require("./model/shopping-list-model");
 const { calculateListRoute, calculateStoreRoute } = require("./model/route-model");
@@ -264,6 +265,15 @@ async function route(request, response, context) {
     sendJson(response, 200, result, context.frontendOrigin);
     return;
   }
+  if (pathname === "/stores") {
+    if (request.method !== "GET") {
+      response.setHeader("Allow", "GET");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    sendJson(response, 200, { stores: await listStores(context.pool) }, context.frontendOrigin);
+    return;
+  }
   const storeProductsMatch = pathname.match(/^\/stores\/([^/]+)\/products$/);
   const storeMatch = pathname.match(/^\/stores\/([^/]+)$/);
   if (storeMatch) {
@@ -353,7 +363,7 @@ async function route(request, response, context) {
       sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
       return;
     }
-    const list = await createList(context.pool, payload.sub, storeId, body?.name);
+    const list = await createList(context.pool, payload.sub, storeId, body?.name, body?.emoji);
     if (!list) {
       sendJson(response, 400, { error: "Informe um nome de lista válido." }, context.frontendOrigin);
       return;
@@ -383,7 +393,17 @@ async function route(request, response, context) {
     }
     const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
     if (!payload) return;
-    const result = await calculateListRoute(context.pool, decodeURIComponent(listRouteMatch[1]), payload.sub);
+    let body = {};
+    try {
+      body = (await readJsonBody(request, 32 * 1024)) || {};
+    } catch {
+      body = {};
+    }
+    const result = await calculateListRoute(context.pool, decodeURIComponent(listRouteMatch[1]), payload.sub, {
+      startNodeId: body?.startNodeId,
+      startAisle: body?.startAisle,
+      excludedProductIds: body?.excludedProductIds,
+    });
     if (result.error) {
       sendJson(response, result.status, { error: result.error }, context.frontendOrigin);
       return;
@@ -400,6 +420,29 @@ async function route(request, response, context) {
         return;
       }
       sendJson(response, 200, { deleted: true }, context.frontendOrigin);
+      return;
+    }
+    if (request.method === "PATCH") {
+      const payload = requireRole(request, response, authorizedContext, ["admin", "manager"]);
+      if (!payload) return;
+      let body;
+      try {
+        body = await readJsonBody(request, 16 * 1024);
+      } catch (error) {
+        sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+        return;
+      }
+      const result = await updateListMetadata(context.pool, decodeURIComponent(listMatch[1]), payload.sub, {
+        name: body?.name,
+        emoji: body?.emoji,
+        storeId: body?.storeId,
+        routeInProgress: body?.routeInProgress,
+      });
+      if (result.error) {
+        sendJson(response, result.status, { error: result.error }, context.frontendOrigin);
+        return;
+      }
+      sendJson(response, 200, { list: await getListSummary(context.pool, decodeURIComponent(listMatch[1]), payload.sub) }, context.frontendOrigin);
       return;
     }
     if (request.method !== "GET") {
@@ -448,7 +491,11 @@ async function route(request, response, context) {
         sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
         return;
       }
-      const result = await updateListItem(context.pool, listId, payload.sub, productId, body?.quantity);
+      const result = await updateListItem(context.pool, listId, payload.sub, productId, {
+        quantity: body?.quantity,
+        collected: body?.collected,
+        notFound: body?.notFound,
+      });
       if (result.error) {
         sendJson(response, result.status, { error: result.error }, context.frontendOrigin);
         return;

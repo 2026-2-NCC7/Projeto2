@@ -1,11 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { ClipPath, Defs, G, Path, Rect } from "react-native-svg";
 import { BottomNavigation } from "../components/BottomNavigation";
 import { useAuth } from "../context/AuthContext";
 import { fetchCatalog } from "../services/catalog-api";
-import { addListItem, createShoppingList } from "../services/shopping-list-api";
+import { addListItem, createShoppingList, removeListItem, updateShoppingList } from "../services/shopping-list-api";
+import { fetchStores, validateStore } from "../services/store-api";
+
+const FALLBACK_STORES = [
+  {
+    id: "00000000-0000-0000-0000-000000000001",
+    name: "Mercado Liberdade",
+    address: "Av. da Liberdade, 680 · Liberdade · São Paulo, SP",
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000002",
+    name: "Supermercado Sakura",
+    address: "Rua São Joaquim, 120 · Liberdade · São Paulo, SP",
+  },
+];
 
 const DEFAULT_STORE_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -458,11 +472,12 @@ function ProductCard({ product, quantity, onChangeQuantity }) {
           </Pressable>
           <Text className="font-inter-bold text-[14px] leading-[17px] text-ink">{quantity}</Text>
           <Pressable
-            accessibilityLabel={`Adicionar uma unidade de ${title}`}
+            accessibilityLabel={`${title} já está na lista`}
+            disabled
             hitSlop={8}
-            onPress={() => onChangeQuantity(1)}
+            style={{ opacity: 0.35 }}
           >
-            <PlusIcon />
+            <PlusIcon color="#B8AAA1" />
           </Pressable>
         </View>
       ) : (
@@ -486,11 +501,30 @@ function ProductCard({ product, quantity, onChangeQuantity }) {
 
 export function CreateListScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
-  const { auth, currentStore } = useAuth();
+  const { auth, currentStore, setCurrentStore } = useAuth();
   const listNameInputRef = useRef(null);
   const existingList = route?.params?.list || null;
+  const isEditing = Boolean(route?.params?.isEditing || existingList);
   const [listName, setListName] = useState(existingList?.name || "");
   const [selectedEmoji, setSelectedEmoji] = useState(existingList?.emoji || listEmojis[0]);
+  const [availableStores, setAvailableStores] = useState(FALLBACK_STORES);
+  const [selectedStore, setSelectedStore] = useState(() => {
+    if (existingList?.storeId) {
+      return {
+        id: existingList.storeId,
+        name: existingList.storeName || currentStore?.name || "Mercado Aurora",
+      };
+    }
+    if (currentStore?.id && !String(currentStore.id).startsWith("osm-")) {
+      return {
+        id: currentStore.id,
+        name: currentStore.name || "Mercado Aurora",
+      };
+    }
+    return FALLBACK_STORES[0];
+  });
+  const [storePickerOpen, setStorePickerOpen] = useState(false);
+  const [storesLoading, setStoresLoading] = useState(false);
   const [products, setProducts] = useState(() => fallbackProducts.map(enrichProduct));
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -498,19 +532,63 @@ export function CreateListScreen({ navigation, route }) {
     if (Array.isArray(existingList?.items) && existingList.items.length > 0) {
       const initial = {};
       for (const item of existingList.items) {
-        if (item?.productId && item?.quantity > 0) {
-          initial[item.productId] = item.quantity;
+        const pid = item?.productId ?? item?.id;
+        if (pid && (item?.quantity ?? 1) > 0) {
+          initial[pid] = 1;
         }
       }
       return initial;
     }
-    return existingList ? {} : { 1: 1, 2: 2 };
+    return existingList ? {} : { 1: 1, 2: 1 };
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [validationError, setValidationError] = useState("");
 
-  const activeStoreId = currentStore?.id || DEFAULT_STORE_ID;
+  const activeStoreId = selectedStore?.id || currentStore?.id || DEFAULT_STORE_ID;
+  const activeStoreName = selectedStore?.name || currentStore?.name || "Mercado Aurora";
+
+  useEffect(() => {
+    let active = true;
+    setStoresLoading(true);
+    fetchStores(auth?.token)
+      .then(async (remoteStores) => {
+        if (!active) return;
+        const listToUse = remoteStores.length > 0 ? remoteStores : FALLBACK_STORES;
+        setAvailableStores(listToUse);
+        const match = listToUse.find((s) => String(s.id) === String(activeStoreId));
+        if (match) {
+          setSelectedStore(match);
+        } else {
+          try {
+            const storeFromApi = await validateStore(auth?.token, activeStoreId);
+            if (active && storeFromApi) {
+              setSelectedStore(storeFromApi);
+            }
+          } catch {
+            // Mantém a loja selecionada atual se a validação falhar offline
+          }
+        }
+      })
+      .catch(() => {
+        if (active) setAvailableStores(FALLBACK_STORES);
+      })
+      .finally(() => {
+        if (active) setStoresLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [auth?.token, activeStoreId]);
+
+  const handleSelectStore = async (store) => {
+    setSelectedStore(store);
+    setStorePickerOpen(false);
+    setValidationError("");
+    if (setCurrentStore) {
+      await setCurrentStore(store);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -573,10 +651,12 @@ export function CreateListScreen({ navigation, route }) {
 
   const changeQuantity = (id, delta) => {
     setQuantities((current) => {
-      const next = Math.max(0, (current[id] || 0) + delta);
       const updated = { ...current };
-      if (next) updated[id] = next;
-      else delete updated[id];
+      if (delta > 0) {
+        updated[id] = 1;
+      } else {
+        delete updated[id];
+      }
       return updated;
     });
   };
@@ -604,11 +684,63 @@ export function CreateListScreen({ navigation, route }) {
     setValidationError("");
     setSaving(true);
     try {
-      const { list } = await createShoppingList(auth?.token, activeStoreId, listName);
+      const isEditingRealList =
+        existingList?.id && !String(existingList.id).startsWith("fallback-");
+      const { list } = isEditingRealList
+        ? await updateShoppingList(auth?.token, existingList.id, {
+            name: listName,
+            emoji: selectedEmoji,
+            storeId: activeStoreId,
+          })
+        : await createShoppingList(auth?.token, activeStoreId, listName, selectedEmoji);
+      if (isEditingRealList && Array.isArray(existingList?.items)) {
+        const selectedIds = new Set(selectedProducts.map((p) => String(p.id)));
+        for (const oldItem of existingList.items) {
+          const oldId = String(oldItem.productId ?? oldItem.id ?? "");
+          if (oldId && !selectedIds.has(oldId)) {
+            await removeListItem(auth?.token, list.id, oldId).catch(() => {});
+          }
+        }
+      }
       for (const product of selectedProducts) {
         await addListItem(auth?.token, list.id, product.id, quantities[product.id]);
       }
-      navigation.navigate("Route", { listId: list.id, hasLocationWarning });
+      const savedItems = selectedProducts.map((product) => ({
+        id: product.id,
+        productId: product.id,
+        name: product.name,
+        displayName: product.displayName || product.name,
+        summaryUnit: product.summaryUnit || product.size || "",
+        size: product.size,
+        category: product.category,
+        price: Number(product.price || 0),
+        quantity: quantities[product.id] || 1,
+        aisle: product.location?.aisle || product.aisle || "Corredor 2",
+        shelf: product.location?.shelf || product.shelf || "Prateleira central",
+        nodeId: product.location?.nodeId ?? product.nodeId ?? null,
+        image: product.image,
+      }));
+      if (setCurrentStore) {
+        await setCurrentStore({ id: activeStoreId, name: activeStoreName });
+      }
+      navigation.navigate("ListCreated", {
+        listId: list.id,
+        list: {
+          ...list,
+          name: listName.trim(),
+          emoji: selectedEmoji,
+          storeId: activeStoreId,
+          storeName: activeStoreName,
+          items: savedItems,
+        },
+        items: savedItems,
+        total,
+        store: {
+          id: activeStoreId,
+          name: activeStoreName,
+        },
+        hasLocationWarning,
+      });
     } catch (error) {
       Alert.alert("Não foi possível criar a lista", error.message);
     } finally {
@@ -640,7 +772,9 @@ export function CreateListScreen({ navigation, route }) {
 
           {/* Apresentação — gap 6 */}
           <View className="gap-1.5">
-            <Text className="font-inter-extrabold text-[30px] leading-[36px] text-achai">Criar nova lista</Text>
+            <Text className="font-inter-extrabold text-[30px] leading-[36px] text-achai">
+              {isEditing ? "Editar lista" : "Criar nova lista"}
+            </Text>
             <Text className="font-sans text-[13px] leading-[16px] text-[#66645F]">
               Marina, o que não pode faltar na sua semana?
             </Text>
@@ -708,7 +842,7 @@ export function CreateListScreen({ navigation, route }) {
           <Pressable
             accessibilityRole="button"
             className="h-16 flex-row items-center gap-3 rounded-[14px] bg-[#FFF4E8] p-3"
-            onPress={() => navigation.navigate("QrScanner")}
+            onPress={() => setStorePickerOpen(true)}
           >
             <View className="h-10 w-10 items-center justify-center rounded-[10px] bg-white">
               <StoreIcon />
@@ -716,7 +850,7 @@ export function CreateListScreen({ navigation, route }) {
             <View className="flex-1 gap-1">
               <Text className="font-sans text-[11px] leading-[13px] text-[#66645F]">Supermercado da lista</Text>
               <Text className="font-inter-bold text-[15px] leading-[18px] text-ink" numberOfLines={1}>
-                {currentStore?.name || "Mercado Aurora"}
+                {activeStoreName}
               </Text>
             </View>
             <Text className="font-inter-semibold text-[12px] leading-[15px] text-achai">Trocar</Text>
@@ -858,7 +992,11 @@ export function CreateListScreen({ navigation, route }) {
           >
             <ListChecksIcon />
             <Text className="font-inter-bold text-[15px] leading-[18px] text-ink">
-              {saving ? "Salvando..." : `Criar lista com ${itemCount} itens`}
+              {saving
+                ? "Salvando..."
+                : isEditing
+                  ? `Editar lista com ${itemCount} ${itemCount === 1 ? "item" : "itens"}`
+                  : `Criar lista com ${itemCount} ${itemCount === 1 ? "item" : "itens"}`}
             </Text>
           </Pressable>
 
@@ -873,6 +1011,117 @@ export function CreateListScreen({ navigation, route }) {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={storePickerOpen}
+        onRequestClose={() => setStorePickerOpen(false)}
+      >
+        <Pressable
+          className="flex-1 justify-end bg-black/45"
+          onPress={() => setStorePickerOpen(false)}
+        >
+          <Pressable
+            className="w-full rounded-t-[24px] bg-white px-5 pb-8 pt-5"
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View className="mb-4 flex-row items-center justify-between">
+              <View className="gap-1">
+                <Text className="font-inter-bold text-[18px] text-[#1F1F1F]">
+                  Escolher supermercado
+                </Text>
+                <Text className="font-sans text-[12px] text-[#66645F]">
+                  Selecione o supermercado cadastrado para esta lista
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Fechar seletor de supermercado"
+                className="rounded-[10px] bg-[#F7F7F3] px-3 py-1.5"
+                onPress={() => setStorePickerOpen(false)}
+              >
+                <Text className="font-inter-semibold text-[12px] text-[#66645F]">Fechar</Text>
+              </Pressable>
+            </View>
+
+            {storesLoading ? (
+              <View className="items-center py-6">
+                <ActivityIndicator color="#F26900" size="small" />
+              </View>
+            ) : (
+              <View className="gap-2.5">
+                {availableStores.map((storeItem) => {
+                  const isCurrent = String(storeItem.id) === String(activeStoreId);
+                  return (
+                    <Pressable
+                      key={storeItem.id}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: isCurrent }}
+                      className="flex-row items-center rounded-[14px] p-3"
+                      style={{
+                        backgroundColor: isCurrent ? "#FFF4E8" : "#FFFFFF",
+                        borderWidth: isCurrent ? 1.5 : 1,
+                        borderColor: isCurrent ? "#F26900" : "#E8E8E0",
+                        gap: 12,
+                      }}
+                      onPress={() => handleSelectStore(storeItem)}
+                    >
+                      <View className="h-10 w-10 items-center justify-center rounded-[10px] bg-white">
+                        <StoreIcon />
+                      </View>
+                      <View className="flex-1 gap-0.5">
+                        <Text className="font-inter-bold text-[14px] text-[#1F1F1F]" numberOfLines={1}>
+                          {storeItem.name}
+                        </Text>
+                        {storeItem.address ? (
+                          <Text className="font-sans text-[11px] text-[#66645F]" numberOfLines={1}>
+                            {storeItem.address}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View
+                        className="h-5 w-5 rounded-full bg-white"
+                        style={{
+                          borderWidth: isCurrent ? 5 : 1.5,
+                          borderColor: isCurrent ? "#F26900" : "#E8E8E0",
+                        }}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+
+            <View className="mt-4 flex-row gap-2.5">
+              <Pressable
+                accessibilityRole="button"
+                className="h-[44px] flex-1 items-center justify-center rounded-[12px] border border-[#E8E8E0] bg-[#F7F7F3]"
+                onPress={() => {
+                  setStorePickerOpen(false);
+                  navigation.navigate("QrScanner");
+                }}
+              >
+                <Text className="font-inter-semibold text-[12px] text-[#1F1F1F]">
+                  Escanear QR Code
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                className="h-[44px] flex-1 items-center justify-center rounded-[12px] border border-[#E8E8E0] bg-[#F7F7F3]"
+                onPress={() => {
+                  setStorePickerOpen(false);
+                  navigation.navigate("Catalog");
+                }}
+              >
+                <Text className="font-inter-semibold text-[12px] text-[#F26900]">
+                  Buscar no mapa
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <BottomNavigation navigation={navigation} activeTab="Listas" />
     </View>

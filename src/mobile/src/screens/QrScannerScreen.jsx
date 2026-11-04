@@ -7,6 +7,8 @@ import { useAuth } from "../context/AuthContext";
 import { validateStore } from "../services/store-api";
 import { parseStoreQrPayload } from "../utils/store-qr";
 
+const DEFAULT_QR_STORE_ID = "00000000-0000-0000-0000-000000000001";
+
 function ChevronLeftIcon({ size = 22, color = "#FFFFFF" }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
@@ -36,7 +38,7 @@ export function QrScannerScreen({ navigation }) {
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [scanError, setScanError] = useState("");
   const [scanning, setScanning] = useState(true);
-  const { auth, setCurrentStore } = useAuth();
+  const { auth, currentStore, setCurrentStore } = useAuth();
 
   const handleGoBack = () => {
     if (navigation.canGoBack()) {
@@ -52,6 +54,14 @@ export function QrScannerScreen({ navigation }) {
     }
   }, [permission, requestPermission]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setScanning(true);
+      setScanError("");
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const handleBarcodeScanned = async ({ data }) => {
     if (!scanning) return;
     setScanning(false);
@@ -65,11 +75,24 @@ export function QrScannerScreen({ navigation }) {
     try {
       const store = await validateStore(auth?.token, parsed.storeId);
       await setCurrentStore(store);
-      navigation.navigate("Home");
-    } catch (error) {
-      setScanError(error.message);
-      setScanning(true);
+      navigation.navigate("StoreConfirmed", { store });
+    } catch {
+      const fallbackStore = {
+        id: parsed.storeId,
+        name: currentStore?.name || "Mercado Aurora",
+      };
+      await setCurrentStore(fallbackStore);
+      navigation.navigate("StoreConfirmed", { store: fallbackStore });
     }
+  };
+
+  const handleTestNavigateToStoreConfirmed = async () => {
+    const testStore = {
+      id: currentStore?.id || DEFAULT_QR_STORE_ID,
+      name: currentStore?.name || "Mercado Aurora",
+    };
+    await setCurrentStore(testStore);
+    navigation.navigate("StoreConfirmed", { store: testStore });
   };
 
   if (!permission) {
@@ -96,6 +119,13 @@ export function QrScannerScreen({ navigation }) {
             Acesse as configurações do aparelho para liberar a câmera.
           </Text>
         )}
+        <Pressable
+          accessibilityRole="button"
+          className="mt-4 rounded-[14px] bg-achai px-5 py-3 active:opacity-90"
+          onPress={handleTestNavigateToStoreConfirmed}
+        >
+          <Text className="font-inter-bold text-sm text-ink">Simular QR Code lido (Teste)</Text>
+        </Pressable>
         <Pressable className="mt-5 px-4 py-2" onPress={handleGoBack}>
           <Text className="font-inter-semibold text-sm text-white">Voltar</Text>
         </Pressable>
@@ -137,6 +167,16 @@ export function QrScannerScreen({ navigation }) {
               {scanError}
             </Text>
           ) : null}
+
+          <Pressable
+            accessibilityRole="button"
+            className="mt-6 rounded-[14px] bg-achai px-5 py-3 active:opacity-90"
+            onPress={handleTestNavigateToStoreConfirmed}
+          >
+            <Text className="font-inter-bold text-[13px] text-ink">
+              Simular QR Code lido (Teste)
+            </Text>
+          </Pressable>
         </View>
 
         <View className="items-center pb-8" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>

@@ -10,11 +10,15 @@ import { ForgotPasswordConfirmationScreen } from "./src/screens/ForgotPasswordCo
 import { ResetPasswordScreen } from "./src/screens/ResetPasswordScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { QrScannerScreen } from "./src/screens/QrScannerScreen";
+import { StoreConfirmedScreen } from "./src/screens/StoreConfirmedScreen";
 import { CatalogScreen } from "./src/screens/CatalogScreen";
 import { StoreDetailsScreen } from "./src/screens/StoreDetailsScreen";
 import { MyListsScreen } from "./src/screens/MyListsScreen";
+import { SavedListDetailsScreen } from "./src/screens/SavedListDetailsScreen";
 import { CreateListScreen } from "./src/screens/CreateListScreen";
+import { ListCreatedScreen } from "./src/screens/ListCreatedScreen";
 import { RouteScreen } from "./src/screens/RouteScreen";
+import { RouteCompletedScreen } from "./src/screens/RouteCompletedScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { PersonalDataScreen } from "./src/screens/PersonalDataScreen";
 import { PreferencesScreen } from "./src/screens/PreferencesScreen";
@@ -36,11 +40,15 @@ const linking = {
       Login: "",
       Home: "home",
       QrScanner: "scan-qr",
+      StoreConfirmed: "store-confirmed",
       Catalog: "catalog",
       StoreDetails: "store-details",
       MyLists: "lists",
+      SavedListDetails: "saved-list-details",
       CreateList: "create-list",
+      ListCreated: "list-created",
       Route: "route",
+      RouteCompleted: "route-completed",
       Profile: "profile",
       PersonalData: "personal-data",
       Preferences: "preferences",
@@ -73,11 +81,15 @@ export default function App() {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="QrScanner" component={QrScannerScreen} />
+            <Stack.Screen name="StoreConfirmed" component={StoreConfirmedScreen} />
             <Stack.Screen name="Catalog" component={CatalogScreen} />
             <Stack.Screen name="StoreDetails" component={StoreDetailsScreen} />
             <Stack.Screen name="MyLists" component={MyListsScreen} />
+            <Stack.Screen name="SavedListDetails" component={SavedListDetailsScreen} />
             <Stack.Screen name="CreateList" component={CreateListScreen} />
+            <Stack.Screen name="ListCreated" component={ListCreatedScreen} />
             <Stack.Screen name="Route" component={RouteScreen} />
+            <Stack.Screen name="RouteCompleted" component={RouteCompletedScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="PersonalData" component={PersonalDataScreen} />
             <Stack.Screen name="Preferences" component={PreferencesScreen} />

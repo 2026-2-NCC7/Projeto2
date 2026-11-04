@@ -1,4 +1,8 @@
 function getAllowedOrigin(requestOrigin, allowedOrigins) {
+  if (allowedOrigins.includes("*")) {
+    return requestOrigin || "*";
+  }
+
   if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
     return requestOrigin;
   }

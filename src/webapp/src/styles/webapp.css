@@ -1316,3 +1316,267 @@ input {
 .wa-modal-success__badge {
   margin-bottom: 12px;
 }
+
+
+/* ── Store Banner & Store Picker Modal (Backend Synced) ────── */
+.wa-store-pill--interactive {
+  cursor: pointer;
+  border: 1px solid rgba(255, 111, 0, 0.2);
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.wa-store-pill--interactive:hover {
+  border-color: var(--wa-orange);
+  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.12);
+}
+
+.wa-store-pill__change {
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--wa-orange);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.wa-store-card--interactive {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid rgba(255, 111, 0, 0.18);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wa-store-card--interactive:hover {
+  border-color: var(--wa-orange);
+  box-shadow: 0 4px 14px rgba(255, 111, 0, 0.12);
+}
+
+.wa-store-card__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.wa-store-card__change {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--wa-orange);
+  background: #ffffff;
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
+.wa-list-store-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 14px;
+  background: #FFF4E8;
+  padding: 12px;
+  margin-top: 12px;
+  border: 1px solid rgba(242, 105, 0, 0.14);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.wa-list-store-banner:hover {
+  border-color: #F26900;
+}
+
+.wa-list-store-banner__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wa-list-store-banner__body,
+.wa-list-store-banner__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wa-list-store-banner__label,
+.wa-list-store-banner__eyebrow {
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 500;
+  color: #7A5A3A;
+}
+
+.wa-list-store-banner__name {
+  font-size: 15px;
+  line-height: 18px;
+  font-weight: 700;
+  color: #1B1A17;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-list-store-banner__address {
+  font-size: 11px;
+  line-height: 15px;
+  color: #85857B;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-list-store-banner__action {
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #F26900;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.wa-store-picker-list,
+.wa-store-picker-modal__list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 56vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.wa-store-picker-option,
+.wa-store-picker-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid #F2D3C1;
+  background: #FFFFFF;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease;
+}
+
+.wa-store-picker-option:hover,
+.wa-store-picker-item:hover {
+  border-color: #F26900;
+  background: #FFF9F5;
+}
+
+.wa-store-picker-option:active,
+.wa-store-picker-item:active {
+  transform: scale(0.99);
+}
+
+.wa-store-picker-option--active,
+.wa-store-picker-item--selected {
+  border-color: #F26900;
+  background: #FFF1E8;
+  box-shadow: 0 4px 14px rgba(242, 105, 0, 0.1);
+}
+
+.wa-store-picker-option .wa-list-store-banner__icon,
+.wa-store-picker-item__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #FFF4E8;
+  border: 1px solid rgba(242, 105, 0, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wa-store-picker-option--active .wa-list-store-banner__icon,
+.wa-store-picker-item--selected .wa-store-picker-item__icon {
+  background: #FFFFFF;
+  border-color: rgba(242, 105, 0, 0.28);
+}
+
+.wa-store-picker-option__info,
+.wa-store-picker-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wa-store-picker-option__name,
+.wa-store-picker-item__name {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 700;
+  color: #191919;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-store-picker-option--active .wa-store-picker-option__name {
+  color: #F26900;
+}
+
+.wa-store-picker-option__address,
+.wa-store-picker-item__meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: #7A5A3A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wa-store-picker-option__radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid #E2C5B3;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.wa-store-picker-option__radio--checked {
+  border-color: #F26900;
+  background: #F26900;
+}
+
+.wa-store-picker-option__radio--checked::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #FFFFFF;
+}
+
+
+/* ── Disabled Add (+) Button State for MVP ─────────────────── */
+.wa-product-card__add-btn:disabled {
+  border: 1px solid #eadfd7;
+  background-color: #f7f3f0;
+  color: #b8aaa1;
+  cursor: not-allowed;
+  opacity: 0.75;
+  transform: none;
+}
