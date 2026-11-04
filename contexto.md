@@ -1,6 +1,6 @@
 # Contexto de Continuidade — Ecossistema Ach.ai
 
-> **Status:** Todas as 3 partes do ecossistema Ach.ai estão **PUBLICADAS E ATIVAS EM PRODUÇÃO**.  
+> **Status:** Todas as 3 partes do ecossistema Ach.ai estão **PUBLICADAS, TESTADAS E 100% OPERACIONAIS EM PRODUÇÃO**.  
 > **Data de Atualização:** 2026-11-04 (deploy concluído com sucesso via Railway e Vercel, sem marcas d'água).
 
 ---
@@ -11,7 +11,7 @@
 | :--- | :--- | :--- | :--- |
 | **Backend API** (`src/backend`) | **Railway** (Web Service Node.js contínuo) | [https://achai-api-production.up.railway.app](https://achai-api-production.up.railway.app) | **Online (200 OK)** · Conectado ao Supabase PostGIS |
 | **WebApp QR Code** (`src/webapp`) | **Vercel** (Vite + React 19) | [https://achai-webapp.vercel.app](https://achai-webapp.vercel.app) | **Online (200 OK)** · Sem marcas d'água · Roteamento SPA |
-| **Mobile Web** (`src/mobile`) | **Vercel** (Expo React Native Web) | [https://achai-mobile.vercel.app](https://achai-mobile.vercel.app) | **Online (200 OK)** · Sem marcas d'água · Roteamento SPA |
+| **Mobile Web** (`src/mobile`) | **Vercel** (Expo React Native Web) | [https://achai-mobile.vercel.app](https://achai-mobile.vercel.app) | **Online (200 OK)** · Sem marcas d'água · Interface Renderizada |
 | **Mobile Android** (`src/mobile`) | **Expo EAS** (Build APK/AAB) | `eas build -p android --profile preview` | Pronto para geração de instalador |
 
 ---
@@ -44,10 +44,14 @@
 
 ## 3. Resumo Técnico Completo das Ações Realizadas
 
-### 3.1. Ajuste de Interface pós-animação (`RouteCompletedScreen.jsx`)
-- Corrigido o espaçamento do **Banner Hero Laranja** (`"Hora de ir para o caixa!"`):
-  - Aumentada a margem superior de `mt-4` (16px) para `mt-6` (24px) no `<Animated.View>`, eliminando a sensação de elemento "grudado" no cabeçalho padronizado da página.
-  - Atualizado fallback do nome da loja de `"Mercado Aurora"` para `"Mercado Liberdade"`.
+### 3.1. Resolução do Erro de Inicialização do Mobile Web no Vercel
+- **Causa Raiz Identificada via Chrome DevTools Protocol**:
+  - O pacote `expo-font` tentava registrar um módulo web através de `registerWebModule(createExpoFontLoader)` no boot do bundle.
+  - Na minificação de produção da Vercel/Expo, `createExpoFontLoader.name` era ofuscado, disparando o erro fatal: `Uncaught Error: Module implementation must be a class`, impedindo o `AppRegistry.runApplication` de montar a árvore de componentes.
+- **Solução Definitiva**:
+  - Criado o loader de fontes condicional [`fontLoader.web.js`](file:///c:/Users/Leo/Projeto2/src/mobile/src/theme/fontLoader.web.js) e [`fontLoader.js`](file:///c:/Users/Leo/Projeto2/src/mobile/src/theme/fontLoader.js). Na Web, o Metro importa o arquivo `.web.js`, eliminando 100% da dependência nativa do `expo-font` no bundle web e carregando as fontes *Inter* e *Rubik* via Google Fonts CDN no CSS. No Android/iOS nativo, as fontes continuam sendo carregadas pelo Expo Font.
+  - Normalizadas todas as barras do `index.html`.
+  - Validado via navegador headless que o `#root` agora renderiza completamente a tela de login (`Ach.ai`, inputs de e-mail/senha, botões e navegação).
 
 ### 3.2. Deploy do Backend no Railway
 - **Projeto Railway**: `achai-backend` (ID: `65b6b97a-2b25-4cd0-af05-261f83a1099e`)
@@ -58,19 +62,6 @@
   - `healthcheckPath`: `/health`
   - `watchPatterns`: `["/src/backend/**"]`
   - Conectado diretamente ao repositório GitHub `2026-2-NCC7/Projeto2` na branch `webapp`.
-- **Variáveis de Ambiente Configuradas no Railway**:
-  - `DATABASE_URL`: String de conexão ao PostgreSQL do Supabase via pooler (`aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require`)
-  - `DATABASE_SSL_REJECT_UNAUTHORIZED`: `false`
-  - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWKS_URL`
-  - `JWT_SECRET`: Chave para emissão de tokens administrativos
-  - `FRONTEND_ORIGIN`: `*` (compatível com os domínios Vercel e app móvel)
-  - `PASSWORD_RESET_BASE_URL`: `https://achai-mobile.vercel.app`
-  - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`: Configuração de e-mail transacional
-  - `PORT`: `3000`
-- **Validação de Produção**:
-  - Endpoint `/health`: Retorna `{"status":"ok","database":"connected"}`.
-  - Endpoint `/stores`: Retorna as filiais ativas (`Mercado Liberdade` e `Supermercado Sakura`).
-  - Endpoint `/stores/:id/products`: Retorna catálogo e informações da loja com CORS liberado.
 
 ### 3.3. Deploy do WebApp na Vercel
 - **Projeto Vercel**: `achai-webapp` (ID: `prj_ueN9V953TGlt9sPq88XkjrWOxesf`)
