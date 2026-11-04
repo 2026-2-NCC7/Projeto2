@@ -65,6 +65,17 @@
   4. **Link do Mobile no WebApp**: Corrigido o botão de download/acesso ao app em [`PurchaseCompletedScreen.jsx`](file:///c:/Users/Leo/Projeto2/src/webapp/src/screens/PurchaseCompletedScreen.jsx) para apontar para `https://achai-mobile.vercel.app`.
   5. **Re-deploy completo**: WebApp e Mobile re-exportados e publicados na Vercel com testes de navegação e login validados via CDP.
 
+### 3.3. Restauração Completa da Tipografia Inter e Rubik no Mobile Web
+- **Causa da fonte serifada (Times New Roman) no navegador**:
+  - No mobile nativo, o Expo registra fontes por alias único (`"Inter-Bold"`, `"Inter-SemiBold"`, `"Rubik-Bold"`).
+  - No bundle web gerado pelo NativeWind, as tags HTML recebiam `font-family: 'Inter-Bold'`, mas o Google Fonts só declara `@font-face { font-family: 'Inter'; font-weight: 700; }`.
+  - Como o navegador não encontrava uma fonte chamada exatamente `'Inter-Bold'` e não havia fallback declarando `sans-serif` no Tailwind, o navegador caía na fonte padrão serifada do sistema operacional.
+- **Solução Definitiva**:
+  - Em [`src/mobile/src/styles.css`](file:///c:/Users/Leo/Projeto2/src/mobile/src/styles.css), declaradas regras `@font-face` específicas mapeando os aliases do Expo (`Inter-Medium`, `Inter-SemiBold`, `Inter-Bold`, `Inter-ExtraBold`, `Rubik-Bold`) para os arquivos TTF correspondentes do Google Fonts.
+  - Adicionado reset global forçando `font-family: 'Inter', sans-serif !important` em todo o `#root` e elementos de texto.
+  - Em [`src/mobile/tailwind.config.js`](file:///c:/Users/Leo/Projeto2/src/mobile/tailwind.config.js), adicionados fallbacks universais `["Inter", "system-ui", "sans-serif"]` para todas as variantes de peso.
+  - Validado via Chrome DevTools que a tipografia foi 100% restaurada com Inter e Rubik idênticas ao Figma.
+
 ### 3.2. Deploy do Backend no Railway
 - **Projeto Railway**: `achai-backend` (ID: `65b6b97a-2b25-4cd0-af05-261f83a1099e`)
 - **Serviço**: `achai-api` (ID: `ad58ef17-4f36-45c7-9475-96a02f3a0626`)
