@@ -32,10 +32,17 @@ export function deleteShoppingList(token, listId) {
   });
 }
 
-export function createShoppingList(token, storeId, name) {
+export function createShoppingList(token, storeId, name, emoji = null) {
   return request(`/stores/${encodeURIComponent(storeId)}/lists`, token, {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, emoji }),
+  });
+}
+
+export function updateShoppingList(token, listId, { name, emoji, storeId, routeInProgress } = {}) {
+  return request(`/lists/${encodeURIComponent(listId)}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({ name, emoji, storeId, routeInProgress }),
   });
 }
 
@@ -46,10 +53,14 @@ export function addListItem(token, listId, productId, quantity) {
   });
 }
 
-export function updateListItem(token, listId, productId, quantity) {
+export function updateListItem(token, listId, productId, payload) {
+  const body =
+    payload !== null && typeof payload === "object"
+      ? payload
+      : { quantity: payload };
   return request(`/lists/${encodeURIComponent(listId)}/items/${encodeURIComponent(productId)}`, token, {
     method: "PATCH",
-    body: JSON.stringify({ quantity }),
+    body: JSON.stringify(body),
   });
 }
 

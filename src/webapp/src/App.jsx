@@ -4,20 +4,32 @@ import { ProductSearchScreen } from "./screens/ProductSearchScreen";
 import { ShoppingListScreen } from "./screens/ShoppingListScreen";
 import { OptimizedRouteScreen } from "./screens/OptimizedRouteScreen";
 import { PurchaseCompletedScreen } from "./screens/PurchaseCompletedScreen";
+import { StoreBuildingIcon } from "./components/StoreHeader";
 import {
   DEFAULT_STORE_ID,
   FALLBACK_PRODUCTS,
   FALLBACK_STORE,
+  FALLBACK_STORES,
+  fetchAvailableStores,
   fetchStoreDetails,
   fetchStoreProducts,
   generateOptimizedRoute,
 } from "./services/webapp-api";
 
-const SESSION_STORAGE_KEY = "achai_webapp_session_v1";
+const SESSION_STORAGE_KEY = "achai_webapp_session_v2";
+const SESSION_STORE_KEY = "achai_webapp_store_id_v1";
 
 function getInitialStoreId() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("storeId") || params.get("filialId") || DEFAULT_STORE_ID;
+  const urlStoreId = params.get("storeId") || params.get("filialId");
+  if (urlStoreId) return urlStoreId;
+  try {
+    const savedStoreId = window.sessionStorage.getItem(SESSION_STORE_KEY);
+    if (savedStoreId) return savedStoreId;
+  } catch {
+    // Ignore storage errors
+  }
+  return DEFAULT_STORE_ID;
 }
 
 function getInitialScreen() {
@@ -30,11 +42,7 @@ function getInitialScreen() {
 }
 
 function getDefaultSessionItems() {
-  return FALLBACK_PRODUCTS.slice(0, 3).map((product) => ({
-    ...product,
-    quantity: 1,
-    checked: true,
-  }));
+  return [];
 }
 
 function loadSessionList() {
@@ -42,7 +50,7 @@ function loadSessionList() {
     const raw = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!raw) return getDefaultSessionItems();
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
+    if (Array.isArray(parsed)) {
       return parsed;
     }
     return getDefaultSessionItems();
@@ -52,9 +60,13 @@ function loadSessionList() {
 }
 
 export function App() {
-  const [storeId] = useState(getInitialStoreId);
+  const [storeId, setStoreId] = useState(getInitialStoreId);
   const [currentScreen, setCurrentScreen] = useState(getInitialScreen);
-  const [store, setStore] = useState(FALLBACK_STORE);
+  const [store, setStore] = useState(
+    () => FALLBACK_STORES.find((s) => s.id === getInitialStoreId()) || FALLBACK_STORE,
+  );
+  const [availableStores, setAvailableStores] = useState(FALLBACK_STORES);
+  const [storePickerOpen, setStorePickerOpen] = useState(false);
   const [products, setProducts] = useState(FALLBACK_PRODUCTS);
   const [searchQuery, setSearchQuery] = useState("");
   const [listItems, setListItems] = useState(loadSessionList);
@@ -69,6 +81,21 @@ export function App() {
       // Ignore storage quota errors in private mode
     }
   }, [listItems]);
+
+  useEffect(() => {
+    let active = true;
+    fetchAvailableStores().then((stores) => {
+      if (!active || !Array.isArray(stores) || stores.length === 0) return;
+      setAvailableStores(stores);
+      const match = stores.find((s) => String(s.id) === String(storeId));
+      if (match) {
+        setStore(match);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [storeId]);
 
   useEffect(() => {
     let active = true;
@@ -88,13 +115,15 @@ export function App() {
       fetchStoreProducts(storeId, searchQuery).then((loadedProducts) => {
         if (!active) return;
         setProducts(loadedProducts);
-        // Sync real backend IDs into default session items if names match
+        // Sync real backend IDs and locations for the selected store into session list items
         setListItems((prevItems) =>
           prevItems.map((item) => {
             const matched = loadedProducts.find(
               (p) => (p.name || "").toLowerCase() === (item.name || "").toLowerCase(),
             );
-            return matched ? { ...item, id: matched.id, location: matched.location } : item;
+            return matched
+              ? { ...item, id: matched.id, price: matched.price, location: matched.location }
+              : item;
           }),
         );
       });
@@ -106,6 +135,25 @@ export function App() {
     };
   }, [storeId, searchQuery]);
 
+  const handleSelectStore = async (nextStore) => {
+    setStore(nextStore);
+    setStoreId(nextStore.id);
+    setStorePickerOpen(false);
+    try {
+      window.sessionStorage.setItem(SESSION_STORE_KEY, nextStore.id);
+      const url = new URL(window.location.href);
+      url.searchParams.set("storeId", nextStore.id);
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      // Ignore history/storage errors
+    }
+
+    if (currentScreen === "route" && listItems.length > 0) {
+      const updatedRoute = await generateOptimizedRoute(nextStore.id, nextStore, listItems);
+      setRouteData(updatedRoute);
+    }
+  };
+
   const handleAddProduct = (product) => {
     setListItems((prev) => {
       const existingIndex = prev.findIndex(
@@ -113,14 +161,9 @@ export function App() {
           Number(item.id) === Number(product.id) ||
           (item.name || "").toLowerCase() === (product.name || "").toLowerCase(),
       );
+      // No MVP, cada produto adicionado entra apenas uma vez na lista (1 parada na rota)
       if (existingIndex >= 0) {
-        const next = [...prev];
-        next[existingIndex] = {
-          ...next[existingIndex],
-          quantity: (next[existingIndex].quantity || 1) + 1,
-          checked: true,
-        };
-        return next;
+        return prev;
       }
       return [
         ...prev,
@@ -133,11 +176,21 @@ export function App() {
     });
   };
 
+  const handleRemoveProduct = (product) => {
+    setListItems((prev) =>
+      prev.filter(
+        (item) =>
+          String(item.id) !== String(product.id) &&
+          (item.name || "").toLowerCase() !== (product.name || "").toLowerCase(),
+      ),
+    );
+  };
+
   const handleToggleChecked = (productId) => {
     setListItems((prev) => {
       const target = prev.find((item) => Number(item.id) === Number(productId));
       if (!target) return prev;
-      if (prev.length > 1 && target.checked !== false) {
+      if (target.checked !== false) {
         return prev.filter((item) => Number(item.id) !== Number(productId));
       }
       return prev.map((item) =>
@@ -176,6 +229,7 @@ export function App() {
           <QrEntryScreen
             storeName={store.name}
             onStartShopping={() => setCurrentScreen("search")}
+            onOpenStorePicker={() => setStorePickerOpen(true)}
           />
         )}
 
@@ -187,7 +241,9 @@ export function App() {
             onSearchChange={setSearchQuery}
             listItems={listItems}
             onAddProduct={handleAddProduct}
+            onRemoveProduct={handleRemoveProduct}
             onNavigate={setCurrentScreen}
+            onOpenStorePicker={() => setStorePickerOpen(true)}
           />
         )}
 
@@ -200,6 +256,7 @@ export function App() {
             onAddMoreProducts={() => setCurrentScreen("search")}
             onGenerateRoute={() => handleGenerateRoute()}
             onNavigate={setCurrentScreen}
+            onOpenStorePicker={() => setStorePickerOpen(true)}
             isGeneratingRoute={isGeneratingRoute}
           />
         )}
@@ -210,8 +267,12 @@ export function App() {
             routeData={routeData}
             listItems={listItems}
             onNavigate={setCurrentScreen}
-            onRecalculateFromAisle={(aisleName) =>
-              handleGenerateRoute({ startAisle: aisleName })
+            onOpenStorePicker={() => setStorePickerOpen(true)}
+            onRecalculateFromAisle={(aisleName, excludedProductIds) =>
+              handleGenerateRoute({
+                startAisle: aisleName,
+                excludedProductIds,
+              })
             }
             onCompleteShopping={(count) => {
               setCompletedCount(count);
@@ -226,10 +287,80 @@ export function App() {
             storeName={store.name}
             listItems={listItems}
             collectedCount={completedCount || listItems.length}
-            onStartNewShopping={() => setCurrentScreen("search")}
+            onStartNewShopping={() => {
+              setListItems([]);
+              setRouteData(null);
+              setCompletedCount(null);
+              setCurrentScreen("search");
+            }}
             onBackToRoute={() => setCurrentScreen("route")}
           />
         )}
+
+        {storePickerOpen ? (
+          <div
+            className="wa-modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Selecionar supermercado da lista"
+            onClick={() => setStorePickerOpen(false)}
+          >
+            <div
+              className="wa-modal-sheet"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="wa-modal-handle" />
+              <div className="wa-modal-header">
+                <h3 className="wa-modal-title">Supermercado da lista</h3>
+                <button
+                  type="button"
+                  className="wa-modal-close"
+                  onClick={() => setStorePickerOpen(false)}
+                  aria-label="Fechar"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="wa-modal-subtitle">
+                Escolha o supermercado para atualizar os produtos, corredores e rota:
+              </p>
+
+              <div className="wa-store-picker-list" role="radiogroup">
+                {availableStores.map((item) => {
+                  const isSelected = String(item.id) === String(storeId);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      className={`wa-store-picker-option ${
+                        isSelected ? "wa-store-picker-option--active" : ""
+                      }`}
+                      onClick={() => handleSelectStore(item)}
+                    >
+                      <div className="wa-list-store-banner__icon">
+                        <StoreBuildingIcon />
+                      </div>
+                      <div className="wa-store-picker-option__info">
+                        <div className="wa-store-picker-option__name">{item.name}</div>
+                        {item.address ? (
+                          <div className="wa-store-picker-option__address">{item.address}</div>
+                        ) : null}
+                      </div>
+                      <span
+                        className={`wa-store-picker-option__radio ${
+                          isSelected ? "wa-store-picker-option__radio--checked" : ""
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </main>
     </div>
   );

@@ -4,8 +4,22 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, ""
 
 export const FALLBACK_STORE = {
   id: DEFAULT_STORE_ID,
-  name: "Mercado Aurora",
+  name: "Mercado Liberdade",
+  address: "Av. da Liberdade, 680 · Liberdade · São Paulo, SP",
 };
+
+export const FALLBACK_STORES = [
+  {
+    id: "00000000-0000-0000-0000-000000000001",
+    name: "Mercado Liberdade",
+    address: "Av. da Liberdade, 680 · Liberdade · São Paulo, SP",
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000002",
+    name: "Supermercado Sakura",
+    address: "Rua São Joaquim, 120 · Liberdade · São Paulo, SP",
+  },
+];
 
 export const FALLBACK_PRODUCTS = [
   {
@@ -291,16 +305,31 @@ export function sortCatalogForWebApp(products) {
   });
 }
 
+export async function fetchAvailableStores() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/stores`);
+    if (!response.ok) throw new Error("Stores list fetch failed");
+    const data = await response.json();
+    if (Array.isArray(data.stores) && data.stores.length > 0) {
+      return data.stores;
+    }
+    return FALLBACK_STORES;
+  } catch {
+    return FALLBACK_STORES;
+  }
+}
+
 export async function fetchStoreDetails(storeId = DEFAULT_STORE_ID) {
   try {
     const response = await fetch(`${API_BASE_URL}/stores/${encodeURIComponent(storeId)}`);
     if (!response.ok) throw new Error("Store fetch failed");
     const data = await response.json();
-    return data.store || FALLBACK_STORE;
+    return data.store || FALLBACK_STORES.find((s) => s.id === storeId) || FALLBACK_STORE;
   } catch {
     return {
       id: storeId || DEFAULT_STORE_ID,
-      name: FALLBACK_STORE.name,
+      name: (FALLBACK_STORES.find((s) => s.id === storeId) || FALLBACK_STORE).name,
+      address: (FALLBACK_STORES.find((s) => s.id === storeId) || FALLBACK_STORE).address,
     };
   }
 }
@@ -352,7 +381,12 @@ export function getAisleColumnIndex(aisleName = "") {
 }
 
 export function buildLocalFallbackRoute(store, listItems, options = {}) {
-  const rawStops = listItems.map((item) => {
+  const excludedIds = new Set(
+    (options?.excludedProductIds || []).map((id) => String(id)),
+  );
+  const rawStops = listItems.filter(
+    (item) => !excludedIds.has(String(item.id)),
+  ).map((item) => {
     const loc = inferProductLocation(item);
     const aisleLabel = loc.aisle === "Setor A" ? "Hortifruti" : loc.aisle;
     return {
@@ -416,6 +450,7 @@ export async function generateOptimizedRoute(storeId, store, listItems, options 
         })),
         startAisle: options?.startAisle || undefined,
         startNodeId: options?.startNodeId || undefined,
+        excludedProductIds: options?.excludedProductIds || undefined,
       }),
     });
     if (!response.ok) throw new Error("Route request failed");

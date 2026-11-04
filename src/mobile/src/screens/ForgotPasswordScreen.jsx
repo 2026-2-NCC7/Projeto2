@@ -39,11 +39,11 @@ export function ForgotPasswordScreen({ navigation }) {
       >
         <View className="flex-1 items-center px-[35px] pt-[180px]">
           <Brand />
-          <Text className="mt-7 text-center text-[22px] leading-7 text-ink">Esqueci minha senha</Text>
-          <Text className="mt-3 max-w-[320px] text-center text-base leading-5 text-ink">
+          <Text className="font-sans mt-7 text-center text-[22px] leading-7 text-ink">Esqueci minha senha</Text>
+          <Text className="font-sans mt-3 max-w-[320px] text-center text-base leading-5 text-ink">
             Digite seu e-mail para receber um link de redefinição.
           </Text>
-          <Text className="mt-7 text-center text-base text-ink">Recuperar acesso</Text>
+          <Text className="font-sans mt-7 text-center text-base text-ink">Recuperar acesso</Text>
 
           <View className="mt-6 w-[218px] gap-[37px]">
             <TextField
@@ -61,9 +61,9 @@ export function ForgotPasswordScreen({ navigation }) {
           </View>
 
           <Pressable className="mt-[208px]" onPress={() => navigation.navigate("Login")}>
-            <Text className="text-center text-base font-semibold text-ink underline">Voltar ao login</Text>
+            <Text className="font-inter-semibold text-center text-base text-ink underline">Voltar ao login</Text>
           </Pressable>
-          <Text className="mt-7 max-w-[300px] text-center text-[10px] leading-3 text-ink">
+          <Text className="font-sans mt-7 max-w-[320px] text-center text-[10px] leading-3 text-ink">
             Ao continuar, você concorda com os <Text className="underline">Termos e a Política de Privacidade</Text>.
           </Text>
         </View>

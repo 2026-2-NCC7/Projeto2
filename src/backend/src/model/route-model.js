@@ -100,6 +100,8 @@ function orderStopsGreedy(locatedItems, adjacency, nodes, initialNodeId) {
       nodeId: chosen.nodeId,
       aisle: chosen.aisle,
       shelf: chosen.shelf,
+      ...(chosen.collected !== undefined ? { collected: Boolean(chosen.collected) } : {}),
+      ...(chosen.notFound !== undefined ? { notFound: Boolean(chosen.notFound) } : {}),
       coordinates: targetNode
         ? { x: Number(targetNode.x) || 0, y: Number(targetNode.y) || 0 }
         : null,
@@ -112,7 +114,7 @@ function orderStopsGreedy(locatedItems, adjacency, nodes, initialNodeId) {
   return { orderedStops, unreachableItems, totalDistance };
 }
 
-async function calculateListRoute(pool, listId, ownerId) {
+async function calculateListRoute(pool, listId, ownerId, options = {}) {
   const listResult = await pool.query(
     `SELECT l.id, l.nome AS name, l.filial_id AS "storeId", l.status,
             f.nome AS "storeName"
@@ -127,17 +129,39 @@ async function calculateListRoute(pool, listId, ownerId) {
     return { error: "A lista precisa ser confirmada antes de calcular a rota.", status: 409 };
   }
 
+  if (!options?.startNodeId && !options?.startAisle && !Array.isArray(options?.excludedProductIds)) {
+    try {
+      await pool.query(
+        "UPDATE shopping_list SET rota_em_andamento = TRUE, updated_at = NOW() WHERE id = $1 AND admin_user_id = $2",
+        [listId, ownerId],
+      );
+      await pool.query(
+        "UPDATE shopping_list_item SET coletado = FALSE, nao_encontrado = FALSE WHERE list_id = $1",
+        [listId],
+      );
+    } catch {
+      // ignora em testes unitários com mocks de pool
+    }
+  }
+
   const itemResult = await pool.query(
     `SELECT i.produto_id AS "productId", i.quantidade AS quantity,
-            p.nome AS name, p.no_id AS "nodeId",
-            p.corredor AS aisle, p.prateleira AS shelf
+            COALESCE(i.coletado, FALSE) AS collected,
+            COALESCE(i.nao_encontrado, FALSE) AS "notFound",
+            p.nome AS name, p.categoria AS category, p.tamanho AS size,
+            p.no_id AS "nodeId", p.corredor AS aisle, p.prateleira AS shelf
      FROM shopping_list_item i
      JOIN produto p ON p.id = i.produto_id
      WHERE i.list_id = $1
      ORDER BY i.created_at`,
     [listId],
   );
-  const items = itemResult.rows;
+  const excludedIds = new Set(
+    (Array.isArray(options?.excludedProductIds) ? options.excludedProductIds : [])
+      .map((id) => Number.parseInt(id, 10))
+      .filter((id) => Number.isFinite(id)),
+  );
+  const items = itemResult.rows.filter((item) => !excludedIds.has(Number(item.productId)));
   const unlocatedItems = items.filter((item) => item.nodeId === null);
   const locatedItems = items.filter((item) => item.nodeId !== null);
   const graphNodesResult = await pool.query(
@@ -161,18 +185,54 @@ async function calculateListRoute(pool, listId, ownerId) {
     to: String(edge.to),
   })), nodes);
   const entrance = graphNodesResult.rows.find((node) => node.tipo === "entrada");
+  const checkout = graphNodesResult.rows.find((node) => node.tipo === "checkout");
+
+  let startNode = entrance || null;
+  if (options?.startNodeId && nodes.has(String(options.startNodeId))) {
+    startNode = nodes.get(String(options.startNodeId));
+  } else if (options?.startAisle) {
+    const targetAisle = String(options.startAisle).toLowerCase();
+    const matchedNode = graphNodesResult.rows.find((node) =>
+      String(node.nome || "").toLowerCase().includes(targetAisle),
+    );
+    if (matchedNode) startNode = matchedNode;
+  }
 
   const { orderedStops, unreachableItems, totalDistance } = orderStopsGreedy(
     locatedItems,
     adjacency,
     nodes,
-    entrance ? String(entrance.id) : null,
+    startNode ? String(startNode.id) : null,
   );
   unlocatedItems.push(...unreachableItems);
 
   return {
     route: {
       list,
+      anchorNode: startNode
+        ? { id: Number(startNode.id), name: startNode.nome, type: startNode.tipo }
+        : null,
+      graph: {
+        entrance: entrance
+          ? { id: Number(entrance.id), name: entrance.nome, x: Number(entrance.x) || 0, y: Number(entrance.y) || 0 }
+          : null,
+        checkout: checkout
+          ? { id: Number(checkout.id), name: checkout.nome, x: Number(checkout.x) || 0, y: Number(checkout.y) || 0 }
+          : null,
+        nodes: graphNodesResult.rows.map((n) => ({
+          id: Number(n.id),
+          name: n.nome,
+          type: n.tipo,
+          x: Number(n.x) || 0,
+          y: Number(n.y) || 0,
+        })),
+        edges: edgeResult.rows.map((e) => ({
+          from: Number(e.from),
+          to: Number(e.to),
+          distance: Number(e.distance),
+          bidirectional: Boolean(e.bidirectional),
+        })),
+      },
       stops: orderedStops,
       unlocatedItems,
       totalDistance,
@@ -180,6 +240,7 @@ async function calculateListRoute(pool, listId, ownerId) {
       locationWarning: unlocatedItems.length
         ? "Alguns produtos não possuem localização ou não estão conectados ao grafo e ficaram fora da rota."
         : null,
+      excludedProductIds: Array.from(excludedIds),
     },
   };
 }
@@ -236,8 +297,14 @@ async function calculateStoreRoute(pool, storeId, rawItems, options = {}) {
     return { error: "Nenhum produto da lista foi encontrado nesta loja.", status: 404 };
   }
 
-  const unlocatedItems = items.filter((item) => item.nodeId === null);
-  const locatedItems = items.filter((item) => item.nodeId !== null);
+  const excludedIds = new Set(
+    (Array.isArray(options?.excludedProductIds) ? options.excludedProductIds : [])
+      .map((id) => Number.parseInt(id, 10))
+      .filter((id) => Number.isFinite(id)),
+  );
+  const remainingItems = items.filter((item) => !excludedIds.has(item.productId));
+  const unlocatedItems = remainingItems.filter((item) => item.nodeId === null);
+  const locatedItems = remainingItems.filter((item) => item.nodeId !== null);
 
   const graphNodesResult = await pool.query(
     `SELECT id, ST_X(coordenadas) AS x, ST_Y(coordenadas) AS y, tipo, nome
@@ -306,6 +373,12 @@ async function calculateStoreRoute(pool, storeId, rawItems, options = {}) {
           x: Number(n.x) || 0,
           y: Number(n.y) || 0,
         })),
+        edges: edgeResult.rows.map((e) => ({
+          from: Number(e.from),
+          to: Number(e.to),
+          distance: Number(e.distance),
+          bidirectional: Boolean(e.bidirectional),
+        })),
       },
       stops: orderedStops,
       unlocatedItems,
@@ -314,6 +387,7 @@ async function calculateStoreRoute(pool, storeId, rawItems, options = {}) {
       locationWarning: unlocatedItems.length
         ? "Alguns produtos não possuem localização ou não estão conectados ao grafo e ficaram fora da rota."
         : null,
+      excludedProductIds: Array.from(excludedIds),
     },
   };
 }

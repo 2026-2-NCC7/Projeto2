@@ -99,11 +99,11 @@ export function RegisterScreen({ navigation }) {
           </View>
 
           <Pressable className="mt-[65px]" onPress={() => navigation.navigate("Login")}>
-            <Text className="text-center text-base font-semibold text-ink underline">
+            <Text className="font-inter-semibold text-center text-base text-ink underline">
               Já possui cadastro? Entrar
             </Text>
           </Pressable>
-          <Text className="mt-7 max-w-[300px] text-center text-[10px] leading-3 text-ink">
+          <Text className="font-sans mt-7 max-w-[320px] text-center text-[10px] leading-3 text-ink">
             Ao continuar, você concorda com os <Text className="underline">Termos e a Política de Privacidade</Text>.
           </Text>
         </View>

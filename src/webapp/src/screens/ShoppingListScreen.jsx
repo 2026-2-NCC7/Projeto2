@@ -1,5 +1,5 @@
 import { BottomNav } from "../components/BottomNav";
-import { StoreHeader } from "../components/StoreHeader";
+import { StoreBuildingIcon, StoreHeader } from "../components/StoreHeader";
 import {
   formatListLocation,
   formatQuantityLabel,
@@ -13,6 +13,7 @@ export function ShoppingListScreen({
   onAddMoreProducts,
   onGenerateRoute,
   onNavigate,
+  onOpenStorePicker,
   isGeneratingRoute,
 }) {
   const count = listItems.length;
@@ -30,10 +31,37 @@ export function ShoppingListScreen({
           storeName={storeName}
           variant="list"
           onBrandClick={() => onNavigate("entry")}
+          onStoreClick={onOpenStorePicker}
         />
 
         <h1 className="wa-list-title">Minha lista</h1>
         <p className="wa-list-subtitle">{subtitleText}</p>
+
+        {/* Card "Supermercado da lista" sincronizado com o backend */}
+        <button
+          type="button"
+          className="wa-list-store-banner"
+          onClick={onOpenStorePicker}
+          aria-label={`Supermercado da lista: ${storeName}. Toque para trocar de supermercado.`}
+        >
+          <div className="wa-list-store-banner__icon">
+            <StoreBuildingIcon />
+          </div>
+          <div className="wa-list-store-banner__info">
+            <div className="wa-list-store-banner__eyebrow">Supermercado da lista</div>
+            <div className="wa-list-store-banner__name">{storeName}</div>
+          </div>
+          <span className="wa-list-store-banner__action">Trocar</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M4 6L8 10L12 6"
+              stroke="#F26900"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
 
         <div className="wa-list-items" role="list">
           {listItems.length ? (
@@ -73,14 +101,9 @@ export function ShoppingListScreen({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="wa-list-item-card__qty"
-                    onClick={() => onIncrementQuantity(item.id)}
-                    title="Toque para ajustar a quantidade"
-                  >
+                  <span className="wa-list-item-card__qty">
                     {formatQuantityLabel(item)}
-                  </button>
+                  </span>
                 </div>
               );
             })
