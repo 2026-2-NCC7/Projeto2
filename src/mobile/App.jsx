@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "./src/context/AuthContext";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -30,7 +29,7 @@ import { SecurityScreen } from "./src/screens/SecurityScreen";
 import { HelpScreen } from "./src/screens/HelpScreen";
 import { ContactTeamScreen } from "./src/screens/ContactTeamScreen";
 import { ContactSuccessScreen } from "./src/screens/ContactSuccessScreen";
-import { appFonts } from "./src/theme/fonts";
+import { useAppFonts } from "./src/theme/fontLoader";
 import "./src/styles.css";
 
 const Stack = createNativeStackNavigator();
@@ -68,9 +67,9 @@ const linking = {
 };
 
 export default function App() {
-  const [fontsLoaded, fontError] = useFonts(Platform.OS === "web" ? {} : appFonts);
+  const [fontsLoaded] = useAppFonts();
 
-  if (!fontsLoaded && !fontError && Platform.OS !== "web") {
+  if (!fontsLoaded) {
     return null;
   }
 
