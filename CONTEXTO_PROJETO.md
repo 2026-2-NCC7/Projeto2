@@ -1,8 +1,8 @@
 # Ach.ai — Contexto e Arquitetura do Projeto
 
-> **Status Geral do Projeto:** Ecossistema completo **PUBLICADO EM PRODUÇÃO** e operacional.  
+> **Status Geral do Projeto:** Ecossistema completo **PUBLICADO EM PRODUÇÃO** e operacional (Backend no Railway, WebApp e Mobile na Vercel).  
 > **Data:** 2026-11-04  
-> **Repositório:** `https://github.com/2026-2-NCC7/Projeto2.git` (`branch: webapp`)
+> **Repositório:** `https://github.com/2026-2-NCC7/Projeto2.git` (`branch: webapp`) · **PR #34** para `develop`
 
 ---
 
@@ -11,8 +11,8 @@
 | Componente | Hospedagem | URL Oficial | Teste de Conexão |
 | :--- | :--- | :--- | :--- |
 | **Backend API** | **Railway** (Node.js Contínuo) | [https://achai-api-production.up.railway.app](https://achai-api-production.up.railway.app) | `GET /health` $\rightarrow$ 200 OK (`database: connected`) |
-| **WebApp QR Code** | **Netlify** (Vite + React 19) | [https://achai-webapp.netlify.app](https://achai-webapp.netlify.app) | 200 OK (com redirects SPA) |
-| **Mobile App (Web)** | **Netlify** (Expo React Native Web) | [https://achai-mobile.netlify.app](https://achai-mobile.netlify.app) | 200 OK (com redirects SPA) |
+| **WebApp QR Code** | **Vercel** (Vite + React 19) | [https://achai-webapp.vercel.app](https://achai-webapp.vercel.app) | 200 OK (com rewrites SPA e sem marcas d'água) |
+| **Mobile App (Web)** | **Vercel** (Expo React Native Web) | [https://achai-mobile.vercel.app](https://achai-mobile.vercel.app) | 200 OK (com rewrites SPA e sem marcas d'água) |
 | **Banco de Dados** | **Supabase** (PostgreSQL + PostGIS) | Região `aws-0-us-east-1` | Migrations `001` a `015` aplicadas |
 
 ---
@@ -45,6 +45,7 @@
    - Provisionado projeto `achai-backend` e serviço `achai-api`.
    - 13 variáveis de ambiente integradas ao Supabase.
    - Domínio SSL gerado e testado com sucesso.
-3. **Deploy dos Frontends no Netlify**:
-   - `achai-webapp` e `achai-mobile` configurados com regras SPA (`_redirects` e `netlify.toml`).
+3. **Deploy dos Frontends na Vercel**:
+   - `achai-webapp` e `achai-mobile` publicados na Vercel sem marca d'água ou barra de feedback.
+   - Regras de roteamento SPA via `vercel.json` configuradas.
    - Apontamentos de produção para a API do Railway validados.

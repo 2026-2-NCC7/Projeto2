@@ -1,17 +1,17 @@
 # Contexto de Continuidade — Ecossistema Ach.ai
 
 > **Status:** Todas as 3 partes do ecossistema Ach.ai estão **PUBLICADAS E ATIVAS EM PRODUÇÃO**.  
-> **Data de Atualização:** 2026-11-04 (deploy concluído com sucesso via Railway e Netlify).
+> **Data de Atualização:** 2026-11-04 (deploy concluído com sucesso via Railway e Vercel, sem marcas d'água).
 
 ---
 
 ## 1. URLs e Status dos Serviços em Produção
 
-| Aplicação | Hospedagem / Plataforma | URL de Produção | Status |
+| Aplicação | Hospedagem / Plataforma | URL Oficial de Produção | Status |
 | :--- | :--- | :--- | :--- |
 | **Backend API** (`src/backend`) | **Railway** (Web Service Node.js contínuo) | [https://achai-api-production.up.railway.app](https://achai-api-production.up.railway.app) | **Online (200 OK)** · Conectado ao Supabase PostGIS |
-| **WebApp QR Code** (`src/webapp`) | **Netlify** (Vite SPA com CDN global) | [https://achai-webapp.netlify.app](https://achai-webapp.netlify.app) | **Online (200 OK)** · Conectado ao Railway API |
-| **Mobile Web** (`src/mobile`) | **Netlify** (Expo React Native Web) | [https://achai-mobile.netlify.app](https://achai-mobile.netlify.app) | **Online (200 OK)** · Conectado ao Railway API |
+| **WebApp QR Code** (`src/webapp`) | **Vercel** (Vite + React 19) | [https://achai-webapp.vercel.app](https://achai-webapp.vercel.app) | **Online (200 OK)** · Sem marcas d'água · Roteamento SPA |
+| **Mobile Web** (`src/mobile`) | **Vercel** (Expo React Native Web) | [https://achai-mobile.vercel.app](https://achai-mobile.vercel.app) | **Online (200 OK)** · Sem marcas d'água · Roteamento SPA |
 | **Mobile Android** (`src/mobile`) | **Expo EAS** (Build APK/AAB) | `eas build -p android --profile preview` | Pronto para geração de instalador |
 
 ---
@@ -29,9 +29,9 @@
         ┌─────────────────────┘             │              └─────────────────────┐
         ▼                                   ▼                                    ▼
 ┌──────────────────────┐         ┌──────────────────────┐             ┌──────────────────────┐
-│     Supabase DB      │         │    Netlify Hosting   │             │   Netlify Hosting    │
-│  PostgreSQL/PostGIS  │         │  achai-mobile.netlify│             │  achai-webapp.netlify│
-│  Tabelas + Migrations│         │      .app            │             │        .app          │
+│     Supabase DB      │         │    Vercel Hosting    │             │    Vercel Hosting    │
+│  PostgreSQL/PostGIS  │         │  achai-mobile.vercel │             │  achai-webapp.vercel │
+│  Tabelas + Migrations│         │         .app         │             │         .app         │
 ├──────────────────────┤         ├──────────────────────┤             ├──────────────────────┤
 │ • Migrations 001-015 │         │ • App Consumidor     │             │ • WebApp QR Code     │
 │ • Liberdade & Sakura │         │ • Login / Cadastro   │             │ • Sem login/cadastro │
@@ -63,8 +63,8 @@
   - `DATABASE_SSL_REJECT_UNAUTHORIZED`: `false`
   - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWKS_URL`
   - `JWT_SECRET`: Chave para emissão de tokens administrativos
-  - `FRONTEND_ORIGIN`: `*` (compatível com os domínios Netlify e app móvel)
-  - `PASSWORD_RESET_BASE_URL`: `https://achai-mobile.netlify.app`
+  - `FRONTEND_ORIGIN`: `*` (compatível com os domínios Vercel e app móvel)
+  - `PASSWORD_RESET_BASE_URL`: `https://achai-mobile.vercel.app`
   - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`: Configuração de e-mail transacional
   - `PORT`: `3000`
 - **Validação de Produção**:
@@ -72,30 +72,22 @@
   - Endpoint `/stores`: Retorna as filiais ativas (`Mercado Liberdade` e `Supermercado Sakura`).
   - Endpoint `/stores/:id/products`: Retorna catálogo e informações da loja com CORS liberado.
 
-### 3.3. Deploy do WebApp no Netlify
-- **Projeto Netlify**: `achai-webapp` (Site ID: `96deb382-d2ef-4805-baa4-9128909b5ac6`)
-- **URL**: `https://achai-webapp.netlify.app`
-- **Build e Configuração**:
-  - `netlify.toml` com regra SPA:
-    ```toml
-    [build]
-      publish = "dist"
-
-    [[redirects]]
-      from = "/*"
-      to = "/index.html"
-      status = 200
-    ```
-  - `public/_redirects` com fallback `/* /index.html 200`
+### 3.3. Deploy do WebApp na Vercel
+- **Projeto Vercel**: `achai-webapp` (ID: `prj_ueN9V953TGlt9sPq88XkjrWOxesf`)
+- **URL**: `https://achai-webapp.vercel.app`
+- **Configuração**:
+  - `vercel.json` com regra de reescrita SPA (`/(.*)` $\rightarrow$ `/index.html`)
   - `.env.production` configurado com `VITE_API_BASE_URL=https://achai-api-production.up.railway.app`
-  - Módulo `src/webapp/src/shared/indoor-map-engine.js` encapsulado para execução estática sem depender de diretórios externos.
+  - Módulo `src/webapp/src/shared/indoor-map-engine.js` encapsulado.
+  - SSO/Deployment Protection desativado (totalmente público).
 
-### 3.4. Deploy do Mobile Web no Netlify
-- **Projeto Netlify**: `achai-mobile` (Site ID: `11fd5640-b188-41e3-ae0e-ec0f81edc865`)
-- **URL**: `https://achai-mobile.netlify.app`
-- **Build e Configuração**:
+### 3.4. Deploy do Mobile Web na Vercel
+- **Projeto Vercel**: `achai-mobile` (ID: `prj_Rw6oFLU8cjgz6ctSFHm6gDYtG21L`)
+- **URL**: `https://achai-mobile.vercel.app`
+- **Configuração**:
   - Exportado com `EXPO_PUBLIC_API_URL=https://achai-api-production.up.railway.app npx expo export --platform web`.
-  - `netlify.toml` e `dist/_redirects` configurados para roteamento SPA sem perda de rotas ao recarregar.
+  - `vercel.json` configurado para roteamento SPA sem perda de rotas ao recarregar.
+  - SSO/Deployment Protection desativado (totalmente público).
 
 ---
 
@@ -124,4 +116,4 @@ Para gerar o aplicativo nativo Android (.apk) para testes em celular físico ou 
 
 - **Repositório Git**: `https://github.com/2026-2-NCC7/Projeto2.git`
 - **Branch Ativa**: `webapp`
-- **Último Commit**: Contém todo o setup de deploy para Railway e Netlify, sincronização de rota e arquivos de redirecionamento.
+- **Pull Request Aberto para `develop`**: [PR #34](https://github.com/2026-2-NCC7/Projeto2/pull/34)
