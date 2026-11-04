@@ -19,7 +19,7 @@ const APP_BENEFITS = [
   },
 ];
 
-const MOBILE_APP_URL = import.meta.env.VITE_MOBILE_APP_URL || "http://localhost:8081";
+const MOBILE_APP_URL = import.meta.env.VITE_MOBILE_APP_URL || "https://achai-mobile.vercel.app";
 
 export function PurchaseCompletedScreen({
   storeId,

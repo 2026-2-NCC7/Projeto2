@@ -66,7 +66,7 @@ export function LoginScreen({ navigation, route }) {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom, 24) }}
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 items-center px-[35px] pt-[136px]">
+        <View className="flex-1 items-center px-[35px] pt-[180px]">
           <Brand />
           <Text className="font-sans mt-7 text-center text-[22px] leading-7 text-ink">Sua compra, no seu ritmo.</Text>
           <Text className="font-sans mt-3 max-w-[320px] text-center text-xs leading-4 text-ink">
@@ -75,8 +75,21 @@ export function LoginScreen({ navigation, route }) {
           <Text className="font-sans mt-7 text-center text-base text-ink">Acesse sua conta</Text>
 
           <View className="mt-6 w-[218px] gap-[37px]">
-            <TextField autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="E-mail" onChangeText={setEmail} value={email} />
-            <TextField label="Senha" onChangeText={setPassword} onToggleSecure={() => setSecurePassword((current) => !current)} secureTextEntry={securePassword} value={password} />
+            <TextField
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              label="E-mail ou telefone"
+              onChangeText={setEmail}
+              value={email}
+            />
+            <TextField
+              label="Senha"
+              onChangeText={setPassword}
+              onToggleSecure={() => setSecurePassword((current) => !current)}
+              secureTextEntry={securePassword}
+              value={password}
+            />
             <Text className={`-mt-5 min-h-4 text-center text-xs ${error ? (registrationSuccess ? "text-green-700" : "text-red-700") : "text-transparent"}`}>
               {error || " "}
             </Text>
@@ -84,12 +97,12 @@ export function LoginScreen({ navigation, route }) {
           </View>
 
           <Pressable className="mt-7" onPress={() => navigation.navigate("ForgotPassword")}>
-            <Text className="text-base font-semibold text-ink underline">Esqueci minha senha</Text>
+            <Text className="font-inter-semibold text-base text-ink underline">Esqueci minha senha</Text>
           </Pressable>
           <Pressable className="mt-[108px]" onPress={() => navigation.navigate("Register")}>
-            <Text className="text-center text-base font-semibold text-ink underline">Ainda não tem conta? Criar conta</Text>
+            <Text className="font-inter-semibold text-center text-base text-ink underline">Ainda não tem conta? Criar conta</Text>
           </Pressable>
-          <Text className="mt-7 max-w-[300px] text-center text-[10px] leading-3 text-ink">
+          <Text className="font-sans mt-7 max-w-[320px] text-center text-[10px] leading-3 text-ink">
             Ao continuar, você concorda com os <Text className="underline">Termos e a Política de Privacidade</Text>.
           </Text>
         </View>

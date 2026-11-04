@@ -16,7 +16,11 @@ const STEPS = [
   },
 ];
 
-export function QrEntryScreen({ storeName = "Mercado Aurora", onStartShopping }) {
+export function QrEntryScreen({
+  storeName = "Mercado Aurora",
+  onStartShopping,
+  onOpenStorePicker,
+}) {
   return (
     <div className="wa-screen wa-screen--entry">
       <section className="wa-entry-hero">
@@ -31,23 +35,31 @@ export function QrEntryScreen({ storeName = "Mercado Aurora", onStartShopping })
       </section>
 
       <div className="wa-entry-body">
-        <div className="wa-store-card" role="region" aria-label="Identificação da loja">
+        <button
+          type="button"
+          className="wa-store-card wa-store-card--interactive"
+          onClick={onOpenStorePicker}
+          aria-label={`Você está em ${storeName}. Toque para trocar de supermercado.`}
+        >
           <div className="wa-store-card__info">
             <span className="wa-store-card__eyebrow">VOCÊ ESTÁ EM</span>
             <strong className="wa-store-card__name">{storeName}</strong>
           </div>
-          <div className="wa-store-card__badge" aria-label="QR Code confirmado">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M5 12.5L9.5 17L19 7.5"
-                stroke="#000000"
-                strokeWidth="2.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <div className="wa-store-card__right">
+            <span className="wa-store-card__change">Trocar</span>
+            <div className="wa-store-card__badge" aria-label="QR Code confirmado">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M5 12.5L9.5 17L19 7.5"
+                  stroke="#000000"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
           </div>
-        </div>
+        </button>
 
         <h2 className="wa-entry-section-title">Como funciona</h2>
 

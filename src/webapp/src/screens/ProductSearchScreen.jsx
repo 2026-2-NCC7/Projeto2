@@ -38,6 +38,7 @@ export function ProductSearchScreen({
   onAddProduct,
   onRemoveProduct,
   onNavigate,
+  onOpenStorePicker,
 }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
 
@@ -80,6 +81,7 @@ export function ProductSearchScreen({
           storeName={storeName}
           variant="search"
           onBrandClick={() => onNavigate("entry")}
+          onStoreClick={onOpenStorePicker}
         />
 
         <h1 className="wa-search-greeting">O que você precisa hoje?</h1>
@@ -161,6 +163,7 @@ export function ProductSearchScreen({
                   quantityById.get(String(product.id)) ||
                   quantityById.get(`name:${(product.name || "").toLowerCase()}`) ||
                   0;
+                const isAdded = qtyInList > 0;
                 return (
                   <article className="wa-product-card" key={product.id}>
                     <div className="wa-product-card__thumb" aria-hidden="true">
@@ -182,11 +185,11 @@ export function ProductSearchScreen({
                         type="button"
                         className="wa-product-card__remove-btn"
                         onClick={() => onRemoveProduct(product)}
-                        disabled={qtyInList === 0}
+                        disabled={!isAdded}
                         aria-label={`Remover ${product.name} da lista`}
                         title={
-                          qtyInList > 0
-                            ? `Remover uma unidade de ${product.name}`
+                          isAdded
+                            ? `Remover ${product.name} da lista`
                             : "Produto ainda não está na lista"
                         }
                       >
@@ -194,11 +197,19 @@ export function ProductSearchScreen({
                       </button>
                       <button
                         type="button"
-                        className="wa-product-card__add-btn"
+                        className={`wa-product-card__add-btn ${isAdded ? "wa-product-card__add-btn--added" : ""}`}
                         onClick={() => onAddProduct(product)}
-                        disabled={!product.inStock}
-                        aria-label={`Adicionar ${product.name} à lista`}
-                        title="Adicionar à lista"
+                        disabled={!product.inStock || isAdded}
+                        aria-label={
+                          isAdded
+                            ? `${product.name} já está na lista`
+                            : `Adicionar ${product.name} à lista`
+                        }
+                        title={
+                          isAdded
+                            ? "Produto já adicionado à lista"
+                            : "Adicionar à lista"
+                        }
                       >
                         <span aria-hidden="true">+</span>
                       </button>

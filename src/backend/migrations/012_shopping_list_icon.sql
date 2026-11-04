@@ -1,0 +1,2 @@
+ALTER TABLE shopping_list
+    ADD COLUMN IF NOT EXISTS icone VARCHAR(32);

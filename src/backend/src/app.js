@@ -6,8 +6,8 @@ const { createPasswordResetSender } = require("./services/email-service");
 function createApp({
   pool,
   jwtSecret = process.env.JWT_SECRET,
-  frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:5174,http://localhost:8081",
-  passwordResetBaseUrl = process.env.PASSWORD_RESET_BASE_URL || "http://localhost:8081",
+  frontendOrigin = process.env.FRONTEND_ORIGIN || "*",
+  passwordResetBaseUrl = process.env.PASSWORD_RESET_BASE_URL || "https://achai-mobile.vercel.app",
   passwordResetSender = createPasswordResetSender({
     apiKey: process.env.RESEND_API_KEY,
     fromEmail: process.env.RESEND_FROM_EMAIL,
@@ -23,7 +23,7 @@ function createApp({
     const context = { pool, jwtSecret, frontendOrigin: requestOrigin, passwordResetBaseUrl, passwordResetSender };
     applyCors(response, requestOrigin);
     if (request.method === "OPTIONS") {
-      response.writeHead(requestOrigin || request.headers.origin ? 204 : 403);
+      response.writeHead(204);
       response.end();
       return;
     }

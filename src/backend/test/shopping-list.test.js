@@ -1,19 +1,142 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
+  createList,
   getListSummary,
+  listUserLists,
+  normalizeListEmoji,
   normalizeListName,
   normalizeQuantity,
+  updateListMetadata,
   upsertListItem,
 } = require("../src/model/shopping-list-model");
+const { listStores } = require("../src/model/catalog-model");
 const { calculateStoreRoute, shortestPath } = require("../src/model/route-model");
 
-test("valida nome e quantidade da lista", () => {
+test("valida nome, emoji e quantidade da lista", () => {
   assert.equal(normalizeListName("  Compra da semana  "), "Compra da semana");
   assert.equal(normalizeListName(""), null);
+  assert.equal(normalizeListEmoji(" 🛍️ "), "🛍️");
+  assert.equal(normalizeListEmoji(""), null);
   assert.equal(normalizeQuantity(2), 2);
   assert.equal(normalizeQuantity(0), null);
   assert.equal(normalizeQuantity("2.5"), null);
+});
+
+test("persiste e retorna o emoji selecionado ao criar e listar listas", async () => {
+  const capturedParams = [];
+  const pool = {
+    async query(sql, params) {
+      if (sql.includes("ALTER TABLE shopping_list")) {
+        return { rows: [] };
+      }
+      if (sql.includes("INSERT INTO shopping_list")) {
+        capturedParams.push(params);
+        return {
+          rows: [
+            {
+              id: "list-emoji-1",
+              name: params[2],
+              emoji: params[3],
+              storeId: params[1],
+              status: "confirmed",
+            },
+          ],
+        };
+      }
+      if (sql.includes("FROM shopping_list l")) {
+        return {
+          rows: [
+            {
+              id: "list-emoji-1",
+              name: "Feira de sábado",
+              emoji: "🍎",
+              storeId: "store-1",
+              storeName: "Mercado Aurora",
+              itemCount: 4,
+              productCount: 2,
+              total: "25.00",
+              hasLocationWarning: false,
+              items: [],
+            },
+          ],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+
+  const created = await createList(pool, "owner-1", "store-1", "Feira de sábado", "🍎");
+  assert.equal(created.name, "Feira de sábado");
+  assert.equal(created.emoji, "🍎");
+  assert.deepEqual(capturedParams[0], ["owner-1", "store-1", "Feira de sábado", "🍎"]);
+
+  const lists = await listUserLists(pool, "owner-1");
+  assert.equal(lists.length, 1);
+  assert.equal(lists[0].emoji, "🍎");
+});
+
+test("lista filiais cadastradas e permite atualizar o supermercado (storeId) de uma lista existente", async () => {
+  const capturedUpdates = [];
+  const pool = {
+    async query(sql, params) {
+      if (sql.includes("ALTER TABLE shopping_list") || sql.includes("INSERT INTO filial") || sql.includes("INSERT INTO produto")) {
+        return { rows: [] };
+      }
+      if (sql.includes("SELECT id, nome AS name, endereco")) {
+        return {
+          rows: [
+            {
+              id: "00000000-0000-0000-0000-000000000001",
+              name: "Mercado Aurora",
+              endereco: { logradouro: "Rua da Consolação, 1240", cidade: "São Paulo", uf: "SP" },
+            },
+            {
+              id: "00000000-0000-0000-0000-000000000002",
+              name: "Supermercado Sakura",
+              endereco: { logradouro: "Rua São Joaquim, 120", cidade: "São Paulo", uf: "SP" },
+            },
+          ],
+        };
+      }
+      if (sql.includes("SELECT id FROM filial WHERE id = $1")) {
+        return params[0] === "00000000-0000-0000-0000-000000000002"
+          ? { rows: [{ id: params[0] }] }
+          : { rows: [] };
+      }
+      if (sql.includes("UPDATE shopping_list")) {
+        capturedUpdates.push(params);
+        return {
+          rows: [
+            {
+              id: params[0],
+              name: "Compra da semana",
+              emoji: "🛍️",
+              storeId: params[5],
+              status: "confirmed",
+            },
+          ],
+        };
+      }
+      return { rows: [] };
+    },
+  };
+
+  const stores = await listStores(pool);
+  assert.equal(stores.length, 2);
+  assert.equal(stores[0].name, "Mercado Aurora");
+  assert.equal(stores[1].name, "Supermercado Sakura");
+
+  const updated = await updateListMetadata(pool, "list-1", "owner-1", {
+    storeId: "00000000-0000-0000-0000-000000000002",
+  });
+  assert.equal(updated.list.storeId, "00000000-0000-0000-0000-000000000002");
+  assert.equal(capturedUpdates[0][5], "00000000-0000-0000-0000-000000000002");
+
+  const notFoundStore = await updateListMetadata(pool, "list-1", "owner-1", {
+    storeId: "99999999-9999-9999-9999-999999999999",
+  });
+  assert.equal(notFoundStore.status, 404);
 });
 
 test("impede adicionar produto fora de estoque", async () => {
@@ -35,11 +158,15 @@ test("impede adicionar produto fora de estoque", async () => {
 test("resume total e alerta de localização ausente", async () => {
   const pool = {
     async query(sql) {
+      if (sql.includes("ALTER TABLE shopping_list")) {
+        return { rows: [] };
+      }
       assert.match(sql, /shopping_list/);
       return {
         rows: [{
           id: "list-1",
           name: "Compra da semana",
+          emoji: "🛍️",
           storeId: "store-1",
           storeName: "Mercado Aurora",
           itemCount: 3,
@@ -55,6 +182,7 @@ test("resume total e alerta de localização ausente", async () => {
 
   assert.equal(summary.total, 42.5);
   assert.equal(summary.itemCount, 3);
+  assert.equal(summary.emoji, "🛍️");
   assert.equal(summary.hasLocationWarning, true);
   assert.match(summary.locationWarning, /fora da rota/i);
 });
