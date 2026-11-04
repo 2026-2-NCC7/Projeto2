@@ -51,7 +51,19 @@
 - **Solução Definitiva**:
   - Criado o loader de fontes condicional [`fontLoader.web.js`](file:///c:/Users/Leo/Projeto2/src/mobile/src/theme/fontLoader.web.js) e [`fontLoader.js`](file:///c:/Users/Leo/Projeto2/src/mobile/src/theme/fontLoader.js). Na Web, o Metro importa o arquivo `.web.js`, eliminando 100% da dependência nativa do `expo-font` no bundle web e carregando as fontes *Inter* e *Rubik* via Google Fonts CDN no CSS. No Android/iOS nativo, as fontes continuam sendo carregadas pelo Expo Font.
   - Normalizadas todas as barras do `index.html`.
-  - Validado via navegador headless que o `#root` agora renderiza completamente a tela de login (`Ach.ai`, inputs de e-mail/senha, botões e navegação).
+  - Validado via navegador headless que o `#root` renderiza completamente a tela de login (`Ach.ai`, inputs de e-mail/senha, botões e navegação).
+
+### 3.2. Correção de CORS no Railway e Resolução de URLs de Produção
+- **Causa dos erros de CORS e `loopback` (localhost)**:
+  1. O serviço Railway `achai-api` estava configurado sem vinculação de branch, efetuando build automático a partir da branch `main` antiga (que não continha o suporte a wildcard `*` e preflights OPTIONS liberados).
+  2. O WebApp chamava `http://localhost:8081` na tela pós-compra [`PurchaseCompletedScreen.jsx`](file:///c:/Users/Leo/Projeto2/src/webapp/src/screens/PurchaseCompletedScreen.jsx) por falta de fallback para o domínio de produção.
+  3. O Mobile Web gerava chamadas para `http://localhost:3000` em [`src/mobile/src/config/api.js`](file:///c:/Users/Leo/Projeto2/src/mobile/src/config/api.js) pois o export do Expo Web não herdava a URL de produção dinamicamente quando acessado fora do ambiente de desenvolvimento.
+- **Soluções Implementadas e Verificadas**:
+  1. **Vinculação da Branch no Railway**: Conectado `achai-api` explicitamente à branch `webapp` (`2026-2-NCC7/Projeto2@webapp`). Deployment realizado com sucesso.
+  2. **Headers de CORS Robustos**: Atualizados [`cors.js`](file:///c:/Users/Leo/Projeto2/src/backend/src/middlewares/cors.js), [`app.js`](file:///c:/Users/Leo/Projeto2/src/backend/src/app.js) e [`http.js`](file:///c:/Users/Leo/Projeto2/src/backend/src/utils/http.js) para responder requisições `OPTIONS` (preflight) com 204 e os cabeçalhos `Access-Control-Allow-Origin: <origin>`, `Access-Control-Allow-Methods` e `Access-Control-Allow-Headers`.
+  3. **Fallback Automático de API no Mobile**: Atualizado [`src/mobile/src/config/api.js`](file:///c:/Users/Leo/Projeto2/src/mobile/src/config/api.js) para que qualquer acesso web fora de `localhost` direcione automaticamente para `https://achai-api-production.up.railway.app`. Adicionado prefixo `https://achai-mobile.vercel.app` ao linking do [`App.jsx`](file:///c:/Users/Leo/Projeto2/src/mobile/App.jsx).
+  4. **Link do Mobile no WebApp**: Corrigido o botão de download/acesso ao app em [`PurchaseCompletedScreen.jsx`](file:///c:/Users/Leo/Projeto2/src/webapp/src/screens/PurchaseCompletedScreen.jsx) para apontar para `https://achai-mobile.vercel.app`.
+  5. **Re-deploy completo**: WebApp e Mobile re-exportados e publicados na Vercel com testes de navegação e login validados via CDP.
 
 ### 3.2. Deploy do Backend no Railway
 - **Projeto Railway**: `achai-backend` (ID: `65b6b97a-2b25-4cd0-af05-261f83a1099e`)
