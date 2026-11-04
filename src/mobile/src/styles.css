@@ -1,5 +1,76 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rubik:wght@700&display=swap');
 
+/* React Native / Expo custom font aliases on Web */
+@font-face {
+  font-family: 'Inter-Medium';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter-SemiBold';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter-Bold';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Inter-ExtraBold';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyYMZg.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Rubik-Bold';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-4I-1UA.ttf') format('truetype');
+}
+
+/* Universal default font reset for Web: Inter Sans-Serif */
+html, body, #root, [dir="auto"], input, button, textarea {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+[class*="font-brand"], [style*="Rubik-Bold"] {
+  font-family: 'Rubik-Bold', 'Rubik', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+}
+
+[class*="font-inter-medium"], [style*="Inter-Medium"] {
+  font-family: 'Inter-Medium', 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+[class*="font-inter-semibold"], [style*="Inter-SemiBold"], [style*="Inter-Semibold"] {
+  font-family: 'Inter-SemiBold', 'Inter', sans-serif !important;
+  font-weight: 600 !important;
+}
+
+[class*="font-inter-bold"], [style*="Inter-Bold"] {
+  font-family: 'Inter-Bold', 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+}
+
+[class*="font-inter-extrabold"], [style*="Inter-ExtraBold"] {
+  font-family: 'Inter-ExtraBold', 'Inter', sans-serif !important;
+  font-weight: 800 !important;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
