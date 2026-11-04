@@ -7,7 +7,7 @@ import {
   INDOOR_SHELVES,
   isPointInsideIndoorMap,
   isPointOnIndoorShelf,
-} from "../../../shared/indoor-map-engine";
+} from "../shared/indoor-map-engine";
 
 export function IndoorStoreMap({
   variant = "webapp",
