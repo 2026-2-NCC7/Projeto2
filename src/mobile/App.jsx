@@ -34,7 +34,7 @@ import "./src/styles.css";
 
 const Stack = createNativeStackNavigator();
 const linking = {
-  prefixes: ["http://localhost:8081", "achai://"],
+  prefixes: ["https://achai-mobile.vercel.app", "http://localhost:8081", "achai://"],
   config: {
     screens: {
       Login: "",
