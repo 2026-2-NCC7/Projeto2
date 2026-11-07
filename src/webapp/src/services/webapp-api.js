@@ -1,6 +1,27 @@
 export const DEFAULT_STORE_ID = "00000000-0000-0000-0000-000000000001";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? "" : "https://achai-api-production.up.railway.app")).replace(/\/$/, "");
+const ANALYTICS_SESSION_KEY = "achai_analytics_session_v1";
+
+function getAnalyticsSessionId() {
+  try {
+    let id = window.sessionStorage.getItem(ANALYTICS_SESSION_KEY);
+    if (!id) {
+      id = window.crypto?.randomUUID?.() || "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => { const random = Math.random() * 16 | 0; return (char === "x" ? random : (random & 3 | 8)).toString(16); });
+      window.sessionStorage.setItem(ANALYTICS_SESSION_KEY, id);
+    }
+    return id;
+  } catch { return null; }
+}
+
+export function trackAnalyticsEvent(type, storeId, payload = {}) {
+  const sessionId = getAnalyticsSessionId();
+  if (!sessionId) return;
+  fetch(`${API_BASE_URL}/analytics/events`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, storeId, type, payload }), keepalive: true,
+  }).catch(() => {});
+}
 
 export const FALLBACK_STORE = {
   id: DEFAULT_STORE_ID,

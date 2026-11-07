@@ -30,6 +30,7 @@ const {
 } = require("./model/shopping-list-model");
 const { calculateListRoute, calculateStoreRoute } = require("./model/route-model");
 const { findPreferences, normalizePreferences, upsertPreferences } = require("./model/preference-model");
+const { getAnalytics, recordAnalyticsEvent } = require("./model/analytics-model");
 
 async function route(request, response, context) {
   const authorizedContext = {
@@ -37,6 +38,28 @@ async function route(request, response, context) {
     sendJson: (res, status, body) => sendJson(res, status, body, context.frontendOrigin),
   };
   const pathname = new URL(request.url, "http://localhost").pathname;
+  if (pathname === "/analytics/events" && request.method === "POST") {
+    let body;
+    try { body = await readJsonBody(request, 8 * 1024); } catch (error) {
+      sendJson(response, error.statusCode || 400, { error: error.message }, context.frontendOrigin);
+      return;
+    }
+    const result = await recordAnalyticsEvent(context.pool, body || {});
+    sendJson(response, result.error ? 400 : 202, result, context.frontendOrigin);
+    return;
+  }
+  if (pathname === "/admin/analytics") {
+    if (request.method !== "GET") {
+      response.setHeader("Allow", "GET");
+      sendJson(response, 405, { error: "Method not allowed" }, context.frontendOrigin);
+      return;
+    }
+    if (!requireRole(request, response, authorizedContext, ["admin", "manager"])) return;
+    const params = new URL(request.url, "http://localhost").searchParams;
+    const data = await getAnalytics(context.pool, { period: params.get("period"), storeId: params.get("storeId") });
+    sendJson(response, 200, data, context.frontendOrigin);
+    return;
+  }
   if (pathname === "/health") {
     health(request, response, context);
     return;
