@@ -14,6 +14,7 @@ export default defineConfig({
       "/auth": "http://localhost:3000",
       "/lists": "http://localhost:3000",
       "/health": "http://localhost:3000",
+      "/analytics": "http://localhost:3000",
     },
   },
 });

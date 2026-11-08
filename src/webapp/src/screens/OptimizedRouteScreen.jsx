@@ -26,6 +26,7 @@ export function OptimizedRouteScreen({
   onNavigate,
   onOpenStorePicker,
   onCompleteShopping,
+  onProductNotFound,
 }) {
   const [collectedIds, setCollectedIds] = useState(() => new Set());
   const [notFoundIds, setNotFoundIds] = useState(() => new Set());
@@ -95,6 +96,7 @@ export function OptimizedRouteScreen({
   };
 
   const handleNotFound = () => {
+    onProductNotFound?.(activeStop);
     if (activeStop?.productId !== undefined) {
       setNotFoundIds((prev) => {
         const next = new Set(prev);

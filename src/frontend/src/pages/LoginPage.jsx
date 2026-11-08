@@ -2,7 +2,7 @@ import { useState } from "react";
 import Brand from "../components/Brand.jsx";
 import { loginAdmin } from "../services/auth-api.js";
 
-export default function LoginPage({ onRegister }) {
+export default function LoginPage({ onRegister, onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +29,7 @@ export default function LoginPage({ onRegister }) {
       sessionStorage.setItem("achai_admin_token", body.token);
       setPassword("");
       setStatus("success");
+      onLogin?.();
     } catch {
       setFeedback("Não foi possível conectar à API. Verifique se o ambiente está ativo.");
       setStatus("idle");

@@ -14,6 +14,7 @@ import {
   fetchStoreDetails,
   fetchStoreProducts,
   generateOptimizedRoute,
+  trackAnalyticsEvent,
 } from "./services/webapp-api";
 
 const SESSION_STORAGE_KEY = "achai_webapp_session_v2";
@@ -75,6 +76,16 @@ export function App() {
   const [completedCount, setCompletedCount] = useState(null);
 
   useEffect(() => {
+    const key = `achai_analytics_started_${storeId}`;
+    try {
+      if (!window.sessionStorage.getItem(key)) {
+        trackAnalyticsEvent("session_started", storeId);
+        window.sessionStorage.setItem(key, "1");
+      }
+    } catch { trackAnalyticsEvent("session_started", storeId); }
+  }, [storeId]);
+
+  useEffect(() => {
     try {
       window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(listItems));
     } catch {
@@ -114,6 +125,7 @@ export function App() {
     const timer = setTimeout(() => {
       fetchStoreProducts(storeId, searchQuery).then((loadedProducts) => {
         if (!active) return;
+        if (searchQuery.trim().length >= 2) trackAnalyticsEvent("product_search", storeId, { query: searchQuery.trim(), productName: loadedProducts[0]?.name, resultCount: loadedProducts.length });
         setProducts(loadedProducts);
         // Sync real backend IDs and locations for the selected store into session list items
         setListItems((prevItems) =>
@@ -216,6 +228,7 @@ export function App() {
     try {
       const generated = await generateOptimizedRoute(storeId, store, listItems, options);
       setRouteData(generated);
+      trackAnalyticsEvent("route_calculated", storeId, { itemCount: listItems.length, aisles: (generated?.stops || []).map((stop) => stop.aisle).filter(Boolean) });
       setCurrentScreen("route");
     } finally {
       setIsGeneratingRoute(false);
@@ -266,6 +279,7 @@ export function App() {
             storeName={store.name}
             routeData={routeData}
             listItems={listItems}
+            onProductNotFound={(stop) => trackAnalyticsEvent("product_not_found", storeId, { productName: stop?.name, aisle: stop?.aisle })}
             onNavigate={setCurrentScreen}
             onOpenStorePicker={() => setStorePickerOpen(true)}
             onRecalculateFromAisle={(aisleName, excludedProductIds) =>
@@ -275,6 +289,7 @@ export function App() {
               })
             }
             onCompleteShopping={(count) => {
+              trackAnalyticsEvent("route_completed", storeId, { itemCount: count });
               setCompletedCount(count);
               setCurrentScreen("completed");
             }}
