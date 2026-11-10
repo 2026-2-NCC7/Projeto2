@@ -3,8 +3,10 @@ import Brand from "./components/Brand.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Presentation from "./pages/Presentation.jsx";
 
 export default function App() {
+  if (window.location.pathname === "/apresentacao" || window.location.pathname === "/apresentacao/") return <Presentation />;
   const demoPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get("demo") === "1";
   const [authenticated, setAuthenticated] = useState(() => demoPreview || Boolean(sessionStorage.getItem("achai_admin_token")));
   const [page, setPage] = useState(() => window.location.hash === "#register" ? "register" : "login");

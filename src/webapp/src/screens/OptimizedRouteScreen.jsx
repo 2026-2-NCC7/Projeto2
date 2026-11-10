@@ -70,6 +70,12 @@ export function OptimizedRouteScreen({
     centerX: 255,
     centerY: 99,
   };
+  const currentCorridor = userAnchor?.corridorIndex ?? activeStop?.corridorIndex ?? activeStop?.colIndex ?? 0;
+  const nearbySuggestions = stops
+    .map((stop, index) => ({ stop, index, corridor: stop.corridorIndex ?? stop.colIndex ?? 0 }))
+    .filter(({ stop, index, corridor }) => index !== activeIndex && index >= activeIndex && Math.abs(corridor-currentCorridor) <= 1 && !collectedIds.has(stop.productId) && !notFoundIds.has(stop.productId))
+    .sort((a, b) => Math.abs(a.corridor - currentCorridor) - Math.abs(b.corridor - currentCorridor))
+    .slice(0, 2);
 
   const { collectedPointsAttr, upcomingPointsAttr } = useMemo(
     () => computeIndoorRoutePolylines(stops, collectedIds, notFoundIds, userAnchor),
@@ -187,6 +193,7 @@ export function OptimizedRouteScreen({
           <p className="wa-current-stop-card__location">
             {formatStopLocation(activeStop)}
           </p>
+          {nearbySuggestions.length > 0 && <div className="wa-nearby-suggestions" aria-label="Itens próximos da sua localização"><div className="wa-nearby-suggestions__heading"><span>📍</span><div><b>Aproveite este trecho</b><small>{nearbySuggestions.length === 1 ? '1 item da sua lista por perto' : `${nearbySuggestions.length} itens da sua lista por perto`}</small></div></div><div className="wa-nearby-suggestions__list">{nearbySuggestions.map(({stop,index,corridor})=><button key={stop.productId} type="button" onClick={()=>setCurrentIndex(index)}><span className="wa-nearby-suggestions__name">{stop.name}</span><span className="wa-nearby-suggestions__location">{formatStopLocation(stop)}</span><span className="wa-nearby-suggestions__distance">{Math.abs(corridor-currentCorridor)===0?'Aqui mesmo':'Próximo corredor'} <b>›</b></span></button>)}</div></div>}
 
           <div className="wa-current-stop-card__actions">
             <button
