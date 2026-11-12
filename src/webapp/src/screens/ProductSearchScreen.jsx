@@ -181,15 +181,16 @@ export function ProductSearchScreen({
                       </p>
                     </div>
                     <div className="wa-product-card__actions">
+                      {isAdded ? <span className="wa-product-card__quantity">{qtyInList} na lista</span> : null}
                       <button
                         type="button"
                         className="wa-product-card__remove-btn"
                         onClick={() => onRemoveProduct(product)}
                         disabled={!isAdded}
-                        aria-label={`Remover ${product.name} da lista`}
+                        aria-label={qtyInList > 1 ? `Remover uma unidade de ${product.name}` : `Remover ${product.name} da lista`}
                         title={
                           isAdded
-                            ? `Remover ${product.name} da lista`
+                            ? `Remover uma unidade de ${product.name}`
                             : "Produto ainda não está na lista"
                         }
                       >
@@ -199,15 +200,15 @@ export function ProductSearchScreen({
                         type="button"
                         className={`wa-product-card__add-btn ${isAdded ? "wa-product-card__add-btn--added" : ""}`}
                         onClick={() => onAddProduct(product)}
-                        disabled={!product.inStock || isAdded}
+                        disabled={!product.inStock}
                         aria-label={
                           isAdded
-                            ? `${product.name} já está na lista`
+                            ? `Adicionar mais uma unidade de ${product.name}; quantidade atual ${qtyInList}`
                             : `Adicionar ${product.name} à lista`
                         }
                         title={
                           isAdded
-                            ? "Produto já adicionado à lista"
+                            ? `Adicionar mais uma unidade (na lista: ${qtyInList})`
                             : "Adicionar à lista"
                         }
                       >

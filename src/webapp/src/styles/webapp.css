@@ -78,6 +78,20 @@ input {
   background-color: #fff7f1;
 }
 
+.wa-screen--route .wa-content {
+  padding: 14px 16px 18px;
+}
+
+.wa-screen--route .wa-brand-btn {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+.wa-screen--route .wa-store-pill {
+  margin-top: 8px;
+  height: 38px;
+}
+
 .wa-content {
   flex: 1;
   padding: 22px 20px 24px;
@@ -588,6 +602,12 @@ input {
   flex-shrink: 0;
 }
 
+.wa-product-card__quantity {
+  color: #7a5a3b;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
 .wa-product-card__remove-btn,
 .wa-product-card__add-btn {
   width: 38px;
@@ -712,13 +732,32 @@ input {
 
 .wa-list-item-card__qty {
   background: none;
-  border: none;
   font-weight: 600;
   font-size: 12px;
   line-height: 15px;
-  color: #f26900;
+  color: #493b30;
+  white-space: nowrap;
+}
+
+.wa-list-item-card__quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.wa-list-item-card__quantity-control button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #f2d0a8;
+  border-radius: 8px;
+  background: #fffaf6;
+  color: #a9510b;
+  font-size: 18px;
+  line-height: 1;
   cursor: pointer;
-  padding: 4px 6px;
 }
 
 .wa-add-more-btn {
@@ -774,12 +813,12 @@ input {
    Screen 04 — Rota otimizada (2063:122)
    ========================================================= */
 .wa-route-title {
-  margin-top: 20px;
+  margin-top: 12px;
   padding-left: 2px;
   font-family: "Inter", sans-serif;
   font-weight: 700;
-  font-size: 24px;
-  line-height: 29px;
+  font-size: 21px;
+  line-height: 26px;
   color: #191919;
 }
 
@@ -794,10 +833,10 @@ input {
 }
 
 .wa-map-canvas {
-  margin-top: 20px;
+  margin-top: 12px;
   width: 350px;
   max-width: 100%;
-  height: 320px;
+  height: 230px;
   border-radius: 16px;
   border: 1px solid #f2d0a8;
   background-color: #fff7f1;
@@ -849,7 +888,7 @@ input {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
 .wa-map-stop {
@@ -886,6 +925,19 @@ input {
   background-color: #f26900;
   box-shadow: 0 0 0 4px rgba(242, 105, 0, 0.28);
   transform: scale(1.06);
+}
+
+.wa-map-user-marker {
+  position: absolute;
+  z-index: 4;
+  width: 15px;
+  height: 15px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #f26900;
+  box-shadow: 0 0 0 3px rgba(242, 105, 0, .45), 0 2px 6px rgba(45, 28, 14, .28);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .wa-map-stop--collected {
@@ -953,14 +1005,14 @@ input {
 }
 
 .wa-current-stop-card {
-  margin-top: 21px;
+  margin-top: 14px;
   width: 350px;
   max-width: 100%;
-  min-height: 192px;
+  min-height: 0;
   border-radius: 16px;
   border: 1px solid #f2d0a8;
   background-color: #fff7f1;
-  padding: 16px;
+  padding: 13px;
   display: flex;
   flex-direction: column;
 }
@@ -991,19 +1043,32 @@ input {
   color: #7a5a3b;
 }
 
-.wa-nearby-suggestions { margin-top: 18px; padding: 12px; border: 1px solid #f0dfcf; border-radius: 12px; background: #fffdfa; }
+.wa-nearby-suggestions { margin-top: 12px; padding: 10px; border: 1px solid #f0dfcf; border-radius: 12px; background: #fffdfa; }
 .wa-nearby-suggestions__heading { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; color: #493b30; }
 .wa-nearby-suggestions__heading > span { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:#fff0e2; font-size:15px; }
 .wa-nearby-suggestions__heading div { display:grid; gap:2px; }
 .wa-nearby-suggestions__heading b { font-size:12px; line-height:15px; }
 .wa-nearby-suggestions__heading small { color:#89796c; font-size:10px; }
-.wa-nearby-suggestions__list { display:grid; gap:6px; }
-.wa-nearby-suggestions__list button { width:100%; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 8px; text-align:left; padding:9px 10px; border:1px solid #f0e7df; border-radius:9px; background:#fff; color:#29231f; cursor:pointer; }
-.wa-nearby-suggestions__list button:active { background:#fff3e8; }
-.wa-nearby-suggestions__name { font-size:12px; font-weight:700; line-height:16px; }
-.wa-nearby-suggestions__location { color:#88796d; font-size:10px; line-height:14px; }
-.wa-nearby-suggestions__distance { grid-column:2; grid-row:1/3; align-self:center; padding:5px 7px; border-radius:20px; background:#fff1e5; color:#a94b00; font-size:9px; white-space:nowrap; }
-.wa-nearby-suggestions__distance b { margin-left:2px; font-size:13px; }
+.wa-recommendation{width:100%;display:grid;gap:6px;padding:11px;border:1px solid #f4d4b4;border-radius:11px;background:linear-gradient(145deg,#fffaf4,#fff1e3);color:#29231f;text-align:left;cursor:pointer;font:inherit;transition:transform .12s ease,background-color .12s ease}
+.wa-recommendation:active{background:#ffead6;transform:scale(.99)}
+.wa-recommendation__top{display:flex;justify-content:space-between;gap:6px;color:#a9510b;font-size:8px;font-weight:800;letter-spacing:.04em}
+.wa-recommendation__name{font-size:14px;font-weight:750;line-height:18px}
+.wa-recommendation__meta{font-size:10px;color:#89796c}
+.wa-recommendation__cta{padding:7px 8px;border-radius:8px;background:#f26900;color:#20160e;font-size:11px;font-weight:800;text-align:center}
+.wa-recommendation__feedback{margin:8px 2px 0;color:#247144;font-size:10px;line-height:1.5}
+
+.wa-promo-backdrop{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(30,24,18,.48)}
+.wa-promo-card{width:min(100%,360px);padding:22px;border:1px solid #f0c18f;border-radius:20px;background:#fffaf4;box-shadow:0 18px 60px #2c1a1238;color:#30251d}
+.wa-promo-card__eyebrow{font-size:10px;font-weight:850;letter-spacing:.08em;color:#b6530b}
+.wa-promo-card h2{margin:10px 0 4px;font-size:21px;line-height:1.2}
+.wa-promo-card__offer{margin:0 0 14px;color:#80654e;font-size:12px}
+.wa-promo-card__product{display:block;font-size:17px;line-height:1.35}
+.wa-promo-card__price{margin:8px 0;color:#927b67;font-size:13px}
+.wa-promo-card__price b{margin-left:7px;color:#d95800;font-size:19px}
+.wa-promo-card>small{display:block;color:#89796c;font-size:10px;line-height:1.5}
+.wa-promo-card__add,.wa-promo-card__dismiss{width:100%;min-height:44px;border-radius:12px;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+.wa-promo-card__add{margin-top:16px;border:0;background:#f26900;color:#21160e}
+.wa-promo-card__dismiss{margin-top:7px;border:0;background:transparent;color:#78685a}
 
 .wa-current-stop-card__actions {
   margin-top: 17px;

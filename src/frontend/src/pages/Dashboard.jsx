@@ -7,7 +7,7 @@ import '../styles/dashboard.css';
 
 const pages = [
   { id: 'overview', icon: '▦', title: 'Visão geral', description: 'Uma visão clara do que acontece na sua loja.' },
-  { id: 'heatmap', icon: '⌖', title: 'Mapa de calor', description: 'Entenda onde as compras se concentram e explore cada corredor.' },
+  { id: 'heatmap', icon: '⌖', title: 'Mapa de calor', description: 'Entenda onde as compras e recomendações se concentram.' },
   { id: 'products', icon: '≡', title: 'Produtos e buscas', description: 'Conecte o interesse dos clientes à disponibilidade dos produtos.' },
   { id: 'journey', icon: '↝', title: 'Jornada de compra', description: 'Acompanhe as rotas e os horários de maior utilização.' },
   { id: 'reports', icon: '↧', title: 'Relatórios', description: 'Leve os indicadores da loja para suas análises e decisões.' },
@@ -87,7 +87,7 @@ export default function Dashboard({ onLogout, demoPreview = false }) {
 
   const heatmapPanel = data && <Panel title="Onde as compras acontecem" description={`${selectedStore} · ${metricLabel.toLowerCase()}`} action={<span className="analytics-tag">{demoPreview ? 'Simulação' : 'Eventos reais'}</span>}>
     <div className="analytics-segment" aria-label="Camada do mapa">{[['units', 'Unidades'], ['revenue', 'Valor das vendas'], ['visits', 'Rotas']].map(([id, label]) => <button key={id} aria-pressed={metric === id} disabled={id !== 'visits' && !data.salesAvailable} className={metric === id ? 'active' : ''} onClick={() => setMetric(id)}>{label}</button>)}</div>
-    <StoreHeatmap corridors={data.corridors} metric={metric} selected={corridor} onSelect={(value) => { setCorridor(value); if (tab === 'overview') navigate('heatmap'); }}/>
+    <StoreHeatmap corridors={data.corridors} metric={metric} selected={corridor} onSelect={(value) => { setCorridor(value); if (tab === 'overview') navigate('heatmap'); }}/><p className="chart-note">Interações por corredor combinam rotas e exibições ou inclusões de recomendações/ofertas. Não representam rastreamento físico contínuo.</p>
     <p className="chart-note">{metric === 'visits' ? 'Rotas calculadas que incluem o corredor; não mede circulação física nem vendas.' : 'Compras simuladas por corredor para demonstrar a futura integração ERP/PDV.'}</p>
   </Panel>;
 
@@ -103,6 +103,7 @@ export default function Dashboard({ onLogout, demoPreview = false }) {
         {data && <>
           {tab === 'overview' && <>
             <div className="analytics-kpis"><Metric title="Sessões iniciadas" value={number(data.sessions)} note="Acessos no período selecionado" symbol="↗"/><Metric title="Conclusão de rotas" value={`${data.completionRate}%`} note={`${number(data.completedRoutes)} de ${number(data.routesCalculated)} rotas`} symbol="✓" color="green"/><Metric title="Buscas realizadas" value={number(data.searches)} note={`${number(data.searchesWithoutResult)} buscas ou relatos sem sucesso`} symbol="⌕" color="blue"/><Metric title="Unidades vendidas" value={data.salesAvailable ? number(data.units) : '—'} note={data.salesAvailable ? `${currency(data.revenue)} em vendas simuladas` : 'Aguardando integração com o PDV'} symbol="▤" color="purple"/></div>
+            <div className="analytics-kpis three"><Metric title="Recomendações exibidas" value={number(data.recommendations?.impressions)} note={`${number(data.recommendations?.additions)} adicionadas à lista`} symbol="✦" color="orange"/><Metric title="Conversão de recomendações" value={`${data.recommendations?.conversionRate || 0}%`} note="Inclusões ÷ exibições registradas" symbol="↗" color="green"/><Metric title="Ofertas adicionadas" value={number(data.promotions?.additions)} note={`${number(data.promotions?.impressions)} popups exibidos · ${data.promotions?.conversionRate || 0}% de conversão`} symbol="⚡" color="blue"/></div>
             <div className="analytics-grid"><Panel title="A jornada em números" description="Selecione uma data para explorar os valores." action={<button className="analytics-text-button" onClick={() => navigate('journey')}>Ver jornada ↗</button>}><TrendChart rows={data.timeline}/></Panel>{heatmapPanel}</div>
             <div className="analytics-grid"><Panel title="Produtos mais buscados" description="O que os clientes procuram na loja." action={<button className="analytics-text-button" onClick={() => navigate('products')}>Explorar produtos ↗</button>}><div className="product-ranking">{topProducts.map((product, index) => <button key={product.id} onClick={() => openProduct(product.id)}><span className="rank-position">{String(index + 1).padStart(2, '0')}</span><span>{product.name}<i><b style={{ width: `${percent(product.searches, Math.max(...topProducts.map((row) => row.searches), 1))}%` }}/></i></span><strong>{number(product.searches)}<small>buscas</small></strong></button>)}{!topProducts.length && <Empty>Nenhuma busca no período.</Empty>}</div></Panel><Panel title="Participação nas vendas" description="Distribuição das unidades vendidas por categoria."><CategoryChart products={data.salesAvailable ? data.products : []}/></Panel></div>
           </>}

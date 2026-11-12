@@ -74,6 +74,7 @@ export function App() {
   const [routeData, setRouteData] = useState(null);
   const [isGeneratingRoute, setIsGeneratingRoute] = useState(false);
   const [completedCount, setCompletedCount] = useState(null);
+  const storeChangeLocked = Boolean(routeData) && currentScreen !== "completed";
 
   useEffect(() => {
     const key = `achai_analytics_started_${storeId}`;
@@ -148,6 +149,7 @@ export function App() {
   }, [storeId, searchQuery]);
 
   const handleSelectStore = async (nextStore) => {
+    if (storeChangeLocked) return;
     setStore(nextStore);
     setStoreId(nextStore.id);
     setStorePickerOpen(false);
@@ -173,9 +175,10 @@ export function App() {
           Number(item.id) === Number(product.id) ||
           (item.name || "").toLowerCase() === (product.name || "").toLowerCase(),
       );
-      // No MVP, cada produto adicionado entra apenas uma vez na lista (1 parada na rota)
       if (existingIndex >= 0) {
-        return prev;
+        return prev.map((item, index) => index === existingIndex
+          ? { ...item, quantity: Math.min(99, Number(item.quantity || 1) + 1) }
+          : item);
       }
       return [
         ...prev,
@@ -189,13 +192,12 @@ export function App() {
   };
 
   const handleRemoveProduct = (product) => {
-    setListItems((prev) =>
-      prev.filter(
-        (item) =>
-          String(item.id) !== String(product.id) &&
-          (item.name || "").toLowerCase() !== (product.name || "").toLowerCase(),
-      ),
-    );
+    setListItems((prev) => prev.flatMap((item) => {
+      const matches = String(item.id) === String(product.id) || (item.name || "").toLowerCase() === (product.name || "").toLowerCase();
+      if (!matches) return [item];
+      const quantity = Number(item.quantity || 1);
+      return quantity > 1 ? [{ ...item, quantity: quantity - 1 }] : [];
+    }));
   };
 
   const handleToggleChecked = (productId) => {
@@ -213,17 +215,16 @@ export function App() {
     });
   };
 
-  const handleIncrementQuantity = (productId) => {
-    setListItems((prev) =>
-      prev.map((item) => {
-        if (Number(item.id) !== Number(productId)) return item;
-        const nextQty = ((item.quantity || 1) % 5) + 1;
-        return { ...item, quantity: nextQty };
-      }),
-    );
+  const handleIncrementQuantity = (productId, change = 1) => {
+    setListItems((prev) => prev.flatMap((item) => {
+      if (String(item.id) !== String(productId)) return [item];
+      const nextQuantity = Number(item.quantity || 1) + change;
+      return nextQuantity > 0 ? [{ ...item, quantity: Math.min(99, nextQuantity) }] : [];
+    }));
   };
 
   const handleGenerateRoute = async (options = {}) => {
+    setStorePickerOpen(false);
     setIsGeneratingRoute(true);
     try {
       const generated = await generateOptimizedRoute(storeId, store, listItems, options);
@@ -242,7 +243,7 @@ export function App() {
           <QrEntryScreen
             storeName={store.name}
             onStartShopping={() => setCurrentScreen("search")}
-            onOpenStorePicker={() => setStorePickerOpen(true)}
+            onOpenStorePicker={storeChangeLocked ? undefined : () => setStorePickerOpen(true)}
           />
         )}
 
@@ -256,7 +257,7 @@ export function App() {
             onAddProduct={handleAddProduct}
             onRemoveProduct={handleRemoveProduct}
             onNavigate={setCurrentScreen}
-            onOpenStorePicker={() => setStorePickerOpen(true)}
+            onOpenStorePicker={storeChangeLocked ? undefined : () => setStorePickerOpen(true)}
           />
         )}
 
@@ -269,7 +270,7 @@ export function App() {
             onAddMoreProducts={() => setCurrentScreen("search")}
             onGenerateRoute={() => handleGenerateRoute()}
             onNavigate={setCurrentScreen}
-            onOpenStorePicker={() => setStorePickerOpen(true)}
+            onOpenStorePicker={storeChangeLocked ? undefined : () => setStorePickerOpen(true)}
             isGeneratingRoute={isGeneratingRoute}
           />
         )}
@@ -281,7 +282,10 @@ export function App() {
             listItems={listItems}
             onProductNotFound={(stop) => trackAnalyticsEvent("product_not_found", storeId, { productName: stop?.name, aisle: stop?.aisle })}
             onNavigate={setCurrentScreen}
-            onOpenStorePicker={() => setStorePickerOpen(true)}
+            onOpenStorePicker={undefined}
+            products={products}
+            onAddRecommendation={handleAddProduct}
+            onTrackEngagement={(type, payload) => trackAnalyticsEvent(type, storeId, payload)}
             onRecalculateFromAisle={(aisleName, excludedProductIds) =>
               handleGenerateRoute({
                 startAisle: aisleName,
@@ -312,7 +316,7 @@ export function App() {
           />
         )}
 
-        {storePickerOpen ? (
+        {storePickerOpen && !storeChangeLocked ? (
           <div
             className="wa-modal-backdrop"
             role="dialog"

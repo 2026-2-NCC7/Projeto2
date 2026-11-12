@@ -101,9 +101,15 @@ export function ShoppingListScreen({
                     </div>
                   </div>
 
-                  <span className="wa-list-item-card__qty">
-                    {formatQuantityLabel(item)}
-                  </span>
+                  <div className="wa-list-item-card__quantity-control" aria-label={`Quantidade de ${item.name}`}>
+                    <button type="button" onClick={() => onIncrementQuantity(item.id, -1)} aria-label={`Diminuir ${item.name}`}>
+                      −
+                    </button>
+                    <span className="wa-list-item-card__qty">{formatQuantityLabel(item)}</span>
+                    <button type="button" onClick={() => onIncrementQuantity(item.id, 1)} aria-label={`Adicionar mais ${item.name}`}>
+                      +
+                    </button>
+                  </div>
                 </div>
               );
             })

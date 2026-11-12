@@ -53,9 +53,9 @@ export const FALLBACK_PRODUCTS = [
     unitSuffix: "",
     inStock: true,
     location: {
-      aisle: "Corredor 3",
-      shelf: "Prateleira central",
-      nodeId: 3,
+      aisle: "Corredor 4",
+      shelf: "Gôndola P4 · Refrigerados",
+      nodeId: 4,
     },
   },
   {
@@ -84,7 +84,7 @@ export const FALLBACK_PRODUCTS = [
     inStock: true,
     location: {
       aisle: "Corredor 1",
-      shelf: "Prateleira central",
+      shelf: "Gôndola P1 · Café e padaria",
       nodeId: 1,
     },
   },
@@ -98,9 +98,9 @@ export const FALLBACK_PRODUCTS = [
     unitSuffix: "",
     inStock: true,
     location: {
-      aisle: "Corredor 2",
-      shelf: "Prateleira central",
-      nodeId: 2,
+      aisle: "Corredor 3",
+      shelf: "Gôndola P3 · Limpeza",
+      nodeId: 3,
     },
   },
   {
@@ -113,9 +113,9 @@ export const FALLBACK_PRODUCTS = [
     unitSuffix: "",
     inStock: true,
     location: {
-      aisle: "Corredor 2",
-      shelf: "Prateleira inferior",
-      nodeId: 2,
+      aisle: "Corredor 3",
+      shelf: "Gôndola P3 · Limpeza",
+      nodeId: 3,
     },
   },
   {
@@ -143,9 +143,9 @@ export const FALLBACK_PRODUCTS = [
     unitSuffix: "",
     inStock: true,
     location: {
-      aisle: "Corredor 3",
-      shelf: "Balcão refrigerado",
-      nodeId: 3,
+      aisle: "Corredor 4",
+      shelf: "Gôndola P4 · Refrigerados",
+      nodeId: 4,
     },
   },
   {
@@ -158,9 +158,9 @@ export const FALLBACK_PRODUCTS = [
     unitSuffix: "",
     inStock: true,
     location: {
-      aisle: "Corredor 3",
-      shelf: "Prateleira inferior",
-      nodeId: 3,
+      aisle: "Corredor 4",
+      shelf: "Gôndola P4 · Refrigerados",
+      nodeId: 4,
     },
   },
   {
@@ -174,7 +174,7 @@ export const FALLBACK_PRODUCTS = [
     inStock: true,
     location: {
       aisle: "Corredor 1",
-      shelf: "Prateleira superior",
+      shelf: "Gôndola P1 · Café e padaria",
       nodeId: 1,
     },
   },
@@ -189,11 +189,95 @@ export const FALLBACK_PRODUCTS = [
     inStock: true,
     location: {
       aisle: "Corredor 2",
-      shelf: "Prateleira inferior",
+      shelf: "Gôndola P2 · Grãos e massas",
       nodeId: 2,
     },
   },
+  { id: 21, name: "Feijão carioca 1 kg", brand: "Camil", category: "Mercearia", price: 8.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 2", shelf: "Gôndola P2 · Grãos e massas", nodeId: 2 } },
+  { id: 22, name: "Macarrão espaguete 500 g", brand: "Renata", category: "Mercearia", price: 4.29, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 2", shelf: "Gôndola P2 · Grãos e massas", nodeId: 2 } },
+  { id: 23, name: "Suco de laranja 1 L", brand: "Del Valle", category: "Bebidas", price: 7.99, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 6", shelf: "Gôndola P6 · Bebidas", nodeId: 6 } },
+  { id: 24, name: "Água mineral 1,5 L", brand: "Crystal", category: "Bebidas", price: 3.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 6", shelf: "Gôndola P6 · Bebidas", nodeId: 6 } },
+  { id: 25, name: "Biscoito de chocolate 130 g", brand: "Bauducco", category: "Mercearia", price: 4.79, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 1", shelf: "Gôndola P1 · Café e padaria", nodeId: 1 } },
+  { id: 26, name: "Iogurte natural 170 g", brand: "Nestlé", category: "Laticínios", price: 3.29, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 4", shelf: "Gôndola P4 · Refrigerados", nodeId: 4 } },
+  { id: 27, name: "Amaciante concentrado 1 L", brand: "Comfort", category: "Limpeza", price: 16.9, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 3", shelf: "Gôndola P3 · Limpeza", nodeId: 3 } },
+  { id: 28, name: "Maçã fuji 1 kg", brand: null, category: "Hortifruti", price: 9.9, size: "1 kg", unitSuffix: "/kg", inStock: true, location: { aisle: "Setor A", shelf: "Banca central", nodeId: 4 } },
+  { id: 29, name: "Pizza congelada 450 g", brand: "Sadia", category: "Congelados", price: 18.9, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 5", shelf: "Gôndola P5 · Congelados", nodeId: 5 } },
+  { id: 30, name: "Biscoito água e sal 200 g", brand: "Marilan", category: "Mercearia", price: 4.59, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 1", shelf: "Gôndola P1 · Café e padaria", nodeId: 1 } },
+  { id: 31, name: "Granola tradicional 250 g", brand: "Mãe Terra", category: "Mercearia", price: 12.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 1", shelf: "Gôndola P1 · Café e padaria", nodeId: 1 } },
+  { id: 32, name: "Farinha de trigo 1 kg", brand: "Dona Benta", category: "Mercearia", price: 5.99, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 2", shelf: "Gôndola P2 · Grãos e massas", nodeId: 2 } },
+  { id: 33, name: "Macarrão parafuso 500 g", brand: "Renata", category: "Mercearia", price: 4.79, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 2", shelf: "Gôndola P2 · Grãos e massas", nodeId: 2 } },
+  { id: 34, name: "Lentilha 500 g", brand: "Camil", category: "Mercearia", price: 8.99, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 2", shelf: "Gôndola P2 · Grãos e massas", nodeId: 2 } },
+  { id: 35, name: "Água sanitária 1 L", brand: "Ypê", category: "Limpeza", price: 4.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 3", shelf: "Gôndola P3 · Limpeza", nodeId: 3 } },
+  { id: 36, name: "Desinfetante lavanda 1 L", brand: "Pinho Sol", category: "Limpeza", price: 7.99, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 3", shelf: "Gôndola P3 · Limpeza", nodeId: 3 } },
+  { id: 37, name: "Sabão líquido para roupas 1 L", brand: "OMO", category: "Limpeza", price: 18.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 3", shelf: "Gôndola P3 · Limpeza", nodeId: 3 } },
+  { id: 38, name: "Manteiga com sal 200 g", brand: "Aviação", category: "Laticínios", price: 12.9, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 4", shelf: "Gôndola P4 · Refrigerados", nodeId: 4 } },
+  { id: 39, name: "Requeijão cremoso 200 g", brand: "Catupiry", category: "Laticínios", price: 9.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 4", shelf: "Gôndola P4 · Refrigerados", nodeId: 4 } },
+  { id: 40, name: "Creme de leite 200 g", brand: "Nestlé", category: "Laticínios", price: 4.29, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 4", shelf: "Gôndola P4 · Refrigerados", nodeId: 4 } },
+  { id: 41, name: "Hambúrguer bovino  congelado 672 g", brand: "Sadia", category: "Congelados", price: 19.9, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 5", shelf: "Gôndola P5 · Congelados", nodeId: 5 } },
+  { id: 42, name: "Batata palito congelada 400 g", brand: "Bem Brasil", category: "Congelados", price: 13.9, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 5", shelf: "Gôndola P5 · Congelados", nodeId: 5 } },
+  { id: 43, name: "Refrigerante guaraná 2 L", brand: "Guaraná Antarctica", category: "Bebidas", price: 8.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 6", shelf: "Gôndola P6 · Bebidas", nodeId: 6 } },
+  { id: 44, name: "Água com gás 500 ml", brand: "Crystal", category: "Bebidas", price: 2.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 6", shelf: "Gôndola P6 · Bebidas", nodeId: 6 } },
+  { id: 45, name: "Chá mate 1,5 L", brand: "Leão", category: "Bebidas", price: 7.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 6", shelf: "Gôndola P6 · Bebidas", nodeId: 6 } },
+  { id: 46, name: "Laranja pera 1 kg", brand: null, category: "Hortifruti", price: 5.99, size: "1 kg", unitSuffix: "/kg", inStock: true, location: { aisle: "Setor A", shelf: "Banca de frutas", nodeId: 4 } },
+  { id: 47, name: "Cenoura 1 kg", brand: null, category: "Hortifruti", price: 4.49, size: "1 kg", unitSuffix: "/kg", inStock: true, location: { aisle: "Setor A", shelf: "Banca de legumes", nodeId: 4 } },
+  { id: 48, name: "Alface crespa", brand: null, category: "Hortifruti", price: 3.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Setor A", shelf: "Banca de verduras", nodeId: 4 } },
+  { id: 49, name: "Sabonete hidratante 85 g", brand: "Nivea", category: "Higiene", price: 3.99, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 7", shelf: "Gôndola P7 · Higiene", nodeId: 7 } },
+  { id: 50, name: "Creme dental 90 g", brand: "Colgate", category: "Higiene", price: 5.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 7", shelf: "Gôndola P7 · Higiene", nodeId: 7 } },
+  { id: 51, name: "Papel higiênico 12 rolos", brand: "Neve", category: "Higiene", price: 19.9, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 7", shelf: "Gôndola P7 · Higiene", nodeId: 7 } },
+  { id: 52, name: "Bolo de chocolate 300 g", brand: "Pullman", category: "Padaria", price: 8.99, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 1", shelf: "Gôndola P1 · Café e padaria", nodeId: 1 } },
+  { id: 53, name: "Amaciante concentrado 500 ml", brand: "Downy", category: "Limpeza", price: 12.99, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 3", shelf: "Gôndola P3 · Limpeza", nodeId: 3 } },
+  { id: 54, name: "Refrigerante cola 2 L", brand: "Coca-Cola", category: "Bebidas", price: 10.49, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Corredor 6", shelf: "Gôndola P6 · Bebidas", nodeId: 6 } },
+  { id: 55, name: "Uva sem semente 500 g", brand: null, category: "Hortifruti", price: 11.9, size: "1 un.", unitSuffix: "", inStock: true, location: { aisle: "Setor A", shelf: "Banca de frutas", nodeId: 4 } },
 ];
+
+// Ofertas independentes do catálogo de recomendações; preços e itens são demonstrativos.
+export const DEMO_PROMOTIONS = [
+  { id: -52001, promoId: "oferta-demo-01", name: "Chocolate ao leite 80 g", brand: "Lacta", category: "Mercearia", price: 6.99, promoPrice: 4.99, offer: "Preço especial por tempo limitado", aisle: "Corredor 1", shelf: "Gôndola P1 · Café e padaria", nodeId: 1 },
+  { id: -52002, promoId: "oferta-demo-02", name: "Azeite extravirgem 250 ml", brand: "Andorinha", category: "Mercearia", price: 24.9, promoPrice: 19.9, offer: "Oferta da loja nesta compra", aisle: "Corredor 2", shelf: "Gôndola P2 · Grãos e massas", nodeId: 2 },
+  { id: -52003, promoId: "oferta-demo-03", name: "Limpador multiuso 500 ml", brand: "Veja", category: "Limpeza", price: 8.49, promoPrice: 6.49, offer: "Oferta relâmpago da seção", aisle: "Corredor 3", shelf: "Gôndola P3 · Limpeza", nodeId: 3 },
+  { id: -52004, promoId: "oferta-demo-04", name: "Iogurte grego 90 g", brand: "Vigor", category: "Laticínios", price: 3.99, promoPrice: 2.99, offer: "Desconto especial hoje", aisle: "Corredor 4", shelf: "Gôndola P4 · Refrigerados", nodeId: 4 },
+  { id: -52005, promoId: "oferta-demo-05", name: "Batata rústica congelada 400 g", brand: "Bem Brasil", category: "Congelados", price: 15.9, promoPrice: 12.9, offer: "Economize nesta compra", aisle: "Corredor 5", shelf: "Gôndola P5 · Congelados", nodeId: 5 },
+  { id: -52006, promoId: "oferta-demo-06", name: "Energético 269 ml", brand: "Red Bull", category: "Bebidas", price: 9.49, promoPrice: 7.49, offer: "Oferta da loja por tempo limitado", aisle: "Corredor 6", shelf: "Gôndola P6 · Bebidas", nodeId: 6 },
+  { id: -52007, promoId: "oferta-demo-07", name: "Morango 250 g", brand: null, category: "Hortifruti", price: 10.9, promoPrice: 7.99, offer: "Destaque do hortifruti", aisle: "Setor A", shelf: "Banca de frutas", nodeId: 7 },
+  { id: -52008, promoId: "oferta-demo-08", name: "Shampoo hidratante 350 ml", brand: "Elseve", category: "Higiene", price: 19.9, promoPrice: 15.9, offer: "Oferta especial da loja", aisle: "Corredor 7", shelf: "Gôndola P7 · Higiene", nodeId: 7 },
+].map((product) => ({ ...product, regularPrice: product.price, price: product.promoPrice, inStock: true, location: { aisle: product.aisle, shelf: product.shelf, nodeId: product.nodeId } }));
+
+export const DEMO_AISLE_CONTENT = [
+  { corridorIndex: 0, label: "Café, padaria e lanches", shelf: "Gôndola P1", recommendationIds: [9, 25, 30, 31] },
+  { corridorIndex: 1, label: "Grãos, massas e básicos", shelf: "Gôndola P2", recommendationIds: [21, 22, 32, 33, 34] },
+  { corridorIndex: 2, label: "Limpeza", shelf: "Gôndola P3", recommendationIds: [11, 27, 35, 36, 37] },
+  { corridorIndex: 3, label: "Laticínios e refrigerados", shelf: "Gôndola P4", recommendationIds: [26, 13, 38, 39, 40] },
+  { corridorIndex: 4, label: "Congelados", shelf: "Gôndola P5", recommendationIds: [29, 41, 42] },
+  { corridorIndex: 5, label: "Bebidas", shelf: "Gôndola P6", recommendationIds: [23, 24, 43, 44, 45] },
+  { corridorIndex: 6, label: "Hortifruti", shelf: "Banca de hortifruti", recommendationIds: [28, 12, 46, 47, 48] },
+];
+
+function normalizeRecommendationName(name) {
+  return String(name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|unidades?|un)\b/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+export function getNearbyDemoRecommendations(corridorIndex, listItems = [], catalog = FALLBACK_PRODUCTS, limit = 1, routeStops = []) {
+  const section = DEMO_AISLE_CONTENT.find((aisle) => aisle.corridorIndex === corridorIndex);
+  if (!section) return [];
+
+  const itemsAlreadyPlanned = [...listItems, ...routeStops];
+  return section.recommendationIds
+    .map((id) => FALLBACK_PRODUCTS.find((product) => product.id === id))
+    .map((demoProduct) => catalog.find((product) => product.name?.toLowerCase() === demoProduct?.name.toLowerCase()) || demoProduct)
+    .filter((product) => product && !itemsAlreadyPlanned.some((item) => {
+      const existingId = item.id ?? item.productId;
+      const productId = product.id ?? product.productId;
+      if (existingId !== undefined && productId !== undefined && String(existingId) === String(productId)) return true;
+      const existingName = normalizeRecommendationName(item.name);
+      return existingName !== "" && existingName === normalizeRecommendationName(product.name);
+    }))
+    .slice(0, limit);
+}
 
 export function getProductEmoji(product) {
   const name = (product?.name || "").toLowerCase();

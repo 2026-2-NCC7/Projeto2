@@ -4,27 +4,27 @@
  */
 
 export const INDOOR_MAP_WIDTH = 350;
-export const INDOOR_MAP_HEIGHT = 250;
-export const TOP_WALKWAY_Y = 35;
-export const BOTTOM_WALKWAY_Y = 206;
-export const ENTRANCE_POINT = { x: 23, y: 222 };
+export const INDOOR_MAP_HEIGHT = 230;
+export const TOP_WALKWAY_Y = 28;
+export const BOTTOM_WALKWAY_Y = 190;
+export const ENTRANCE_POINT = { x: 22, y: 212 };
 
-// As 4 prateleiras/gôndolas compridas e fechadas (não permitem clique do usuário)
-export const INDOOR_SHELVES = [
-  { id: "p1", label: "P1", left: 41, top: 61, width: 26, height: 126 },
-  { id: "p2", label: "P2", left: 121, top: 61, width: 26, height: 126 },
-  { id: "p3", label: "P3", left: 201, top: 61, width: 26, height: 126 },
-  { id: "p4", label: "P4", left: 281, top: 61, width: 26, height: 126 },
-];
+// Seis gôndolas delimitam sete corredores caminháveis.
+export const INDOOR_SHELVES = Array.from({ length: 6 }, (_, index) => ({
+  id: `p${index + 1}`, label: `P${index + 1}`, left: 41 + index * (298 / 6), top: 52, width: 20, height: 126,
+}));
 
 // Os 5 corredores caminháveis ficam nos vãos livres ENTRE (e nas laterais) das prateleiras
-export const INDOOR_CORRIDORS = [
-  { id: "c1", index: 0, label: "C1", name: "Corredor 1", centerX: 23, minX: 0, maxX: 40, shelfLabel: "Prateleira P1" },
-  { id: "c2", index: 1, label: "C2", name: "Corredor 2", centerX: 95, minX: 67, maxX: 120, shelfLabel: "Prateleira P2" },
-  { id: "c3", index: 2, label: "C3", name: "Corredor 3", centerX: 175, minX: 147, maxX: 200, shelfLabel: "Prateleira P3" },
-  { id: "c4", index: 3, label: "C4", name: "Corredor 4", centerX: 255, minX: 227, maxX: 280, shelfLabel: "Prateleira central" },
-  { id: "c5", index: 4, label: "C5", name: "Corredor 5", centerX: 325, minX: 307, maxX: 350, shelfLabel: "Prateleira P4" },
-];
+const AISLE_LABELS = ["CAFÉ/PÃO", "GRÃOS", "LIMPEZA", "LATIC.", "FRIOS", "BEBIDAS", "HORTI"];
+
+export const INDOOR_CORRIDORS = Array.from({ length: 7 }, (_, index) => {
+  const centerX = 26 + index * (298 / 6);
+  return {
+    id: `c${index + 1}`, index, label: `C${index + 1}`, aisleLabel: AISLE_LABELS[index], name: `Corredor ${index + 1}`,
+    centerX, minX: Math.max(0, centerX - 25), maxX: Math.min(350, centerX + 25),
+    shelfLabel: `Gôndola P${Math.min(index + 1, 6)}`,
+  };
+});
 
 // Paletas de cores para o mesmo mapa esquemático:
 // - mobile: mais branco/neutro (#F7F7F3 / #FFFFFF / #EDEDE7)
@@ -106,39 +106,22 @@ export function resolveStopCorridorIndex(stop) {
   const nameText = String(stop?.name || "").toLowerCase();
   const nodeId = Number(stop?.nodeId ?? stop?.location?.nodeId);
 
-  if (aisleText.includes("corredor 5") || aisleText.includes("horti") || aisleText.includes("setor a")) {
-    return 4;
+  if (aisleText.includes("horti") || aisleText.includes("setor a") || categoryText.includes("horti")) return 6;
+  if (aisleText.includes("corredor")) {
+    const aisleNumber = Number(aisleText.match(/corredor\s*(\d+)/)?.[1]);
+    if (Number.isFinite(aisleNumber)) return Math.max(0, Math.min(6, aisleNumber - 1));
   }
-  if (aisleText.includes("corredor 4")) {
-    return 3;
-  }
-  if (aisleText.includes("corredor 3")) {
-    if (nameText.includes("leite") || nameText.includes("ovo")) return 3;
-    if (nameText.includes("queijo")) return 4;
-    return 2;
-  }
-  if (aisleText.includes("corredor 2")) {
-    if (nameText.includes("arroz")) return 2;
-    if (nameText.includes("detergente") || nameText.includes("sabão") || nameText.includes("sabao")) return 1;
-    return 1;
-  }
-  if (aisleText.includes("corredor 1")) {
-    if (nameText.includes("café") || nameText.includes("cafe")) return 1;
-    return 0;
-  }
+  if (categoryText.includes("latic") || nameText.includes("leite") || nameText.includes("ovo") || nameText.includes("queijo")) return 3;
+  if (categoryText.includes("bebida")) return 5;
 
-  if (nodeId === 4 || categoryText.includes("horti")) return 4;
-  if (nodeId === 3 || categoryText.includes("latic")) return 3;
-  if (nodeId === 2) return 2;
+  if (nodeId === 4) return 6;
+  if (nodeId === 3) return 3;
+  if (nodeId === 2) return 1;
   if (nodeId === 1) return 0;
 
   const coordX = Number(stop?.coordinates?.x);
   if (Number.isFinite(coordX) && coordX > 0) {
-    if (coordX >= 28) return 4;
-    if (coordX >= 22) return 3;
-    if (coordX >= 16) return 2;
-    if (coordX >= 9) return 1;
-    return 0;
+    return Math.max(0, Math.min(6, Math.round((coordX / 35) * 6)));
   }
 
   return 0;
@@ -166,20 +149,20 @@ export function resolveBaseStopY(stop, rankInCorridor = 0, totalInCorridor = 1) 
   const coordY = Number(stop?.coordinates?.y);
   if (Number.isFinite(coordY) && coordY > 0 && !shelfText) {
     const clampedRatio = Math.min(1, Math.max(0, (coordY - 4) / 14));
-    targetY = Math.round(79 + clampedRatio * 95);
+    targetY = Math.round(62 + clampedRatio * 90);
   }
 
   if (totalInCorridor <= 1) {
     return targetY;
   }
 
-  const candidateSlots = [79, 114, 149, 184];
+  const candidateSlots = [62, 92, 122, 152];
   if (totalInCorridor <= candidateSlots.length) {
     return candidateSlots[rankInCorridor % candidateSlots.length];
   }
   return Math.min(
-    194,
-    Math.max(72, 75 + rankInCorridor * Math.floor(115 / Math.max(1, totalInCorridor - 1))),
+    166,
+    Math.max(60, 62 + rankInCorridor * Math.floor(104 / Math.max(1, totalInCorridor - 1))),
   );
 }
 
@@ -216,9 +199,9 @@ export function mapStopsToIndoorGraphStops(rawStops, fallbackStops = []) {
 
     const usedYs = usedYsByCorridor.get(corridorIndex) || [];
     while (usedYs.some((existingY) => Math.abs(existingY - centerY) < 24)) {
-      centerY = centerY + 28 <= 194 ? centerY + 28 : Math.max(72, centerY - 28);
+      centerY = centerY + 28 <= 166 ? centerY + 28 : Math.max(60, centerY - 28);
       if (usedYs.some((existingY) => Math.abs(existingY - centerY) < 16)) {
-        centerY = 76 + ((rank * 34) % 116);
+        centerY = 62 + ((rank * 30) % 104);
         break;
       }
     }
@@ -420,53 +403,51 @@ export function orderStopsWithDijkstra(stopsToOrder, startNodeId, userAnchor = n
   }));
 
   const graph = buildIndoorStoreGraph(normalized, userAnchor);
-  const remaining = [...normalized];
-  const ordered = [];
-  let currentNodeId = graph.nodes.has(startNodeId) ? startNodeId : "entrance";
-
-  while (remaining.length > 0) {
-    let bestIdx = 0;
-    let bestResult = null;
-
-    for (let i = 0; i < remaining.length; i += 1) {
-      const candidate = remaining[i];
-      const res = dijkstraShortestPath(graph, currentNodeId, candidate.stopNodeKey);
-      if (
-        bestResult === null ||
-        res.distance < bestResult.distance ||
-        (res.distance === bestResult.distance &&
-          candidate.corridorIndex < remaining[bestIdx].corridorIndex)
-      ) {
-        bestResult = res;
-        bestIdx = i;
-      }
-    }
-
-    const [chosen] = remaining.splice(bestIdx, 1);
-    ordered.push({
-      ...chosen,
-      dijkstraDistance: bestResult?.distance ?? 0,
-    });
-    currentNodeId = chosen.stopNodeKey;
+  const stopsByCorridor = new Map();
+  for (const stop of normalized) {
+    const corridorStops = stopsByCorridor.get(stop.corridorIndex) || [];
+    corridorStops.push(stop);
+    stopsByCorridor.set(stop.corridorIndex, corridorStops);
   }
 
-  return ordered;
+  // Percorre corredores em um único sentido e alterna o sentido dentro das gôndolas,
+  // evitando a heurística gulosa que podia avançar até o fim e depois voltar.
+  const corridorIndexes = [...stopsByCorridor.keys()].sort((a, b) => a - b);
+  let corridorDirection = 1;
+  if (userAnchor && corridorIndexes.length > 1) {
+    const firstX = INDOOR_CORRIDORS[corridorIndexes[0]].centerX;
+    const lastX = INDOOR_CORRIDORS[corridorIndexes[corridorIndexes.length - 1]].centerX;
+    const midpointX = (firstX + lastX) / 2;
+    if (userAnchor.x > midpointX) corridorDirection = -1;
+  }
+  if (corridorDirection < 0) corridorIndexes.reverse();
+
+  let startsFromBottom = userAnchor ? userAnchor.y >= (TOP_WALKWAY_Y + BOTTOM_WALKWAY_Y) / 2 : true;
+  const ordered = [];
+  for (const corridorIndex of corridorIndexes) {
+    const aisleStops = stopsByCorridor.get(corridorIndex) || [];
+    aisleStops.sort((a, b) => startsFromBottom
+      ? b.centerY - a.centerY
+      : a.centerY - b.centerY);
+    ordered.push(...aisleStops);
+    startsFromBottom = !startsFromBottom;
+  }
+
+  let currentNodeId = graph.nodes.has(startNodeId) ? startNodeId : "entrance";
+  return ordered.map((stop) => {
+    const path = dijkstraShortestPath(graph, currentNodeId, stop.stopNodeKey);
+    currentNodeId = stop.stopNodeKey;
+    return { ...stop, dijkstraDistance: path.distance };
+  });
 }
 
 export function flattenSegmentsToPointsAttr(segments) {
-  const all = [];
-  for (let i = 0; i < segments.length; i += 1) {
-    const seg = segments[i];
-    if (!seg || !seg.length) continue;
-    for (let j = 0; j < seg.length; j += 1) {
-      const pt = seg[j];
-      const last = all[all.length - 1];
-      if (!last || last.x !== pt.x || last.y !== pt.y) {
-        all.push(pt);
-      }
-    }
-  }
-  return all.map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join(" ");
+  return segments
+    .filter((segment) => Array.isArray(segment) && segment.length > 1)
+    .map((segment) => segment
+      .filter((point, index) => index === 0 || point.x !== segment[index - 1].x || point.y !== segment[index - 1].y)
+      .map((point) => `${Math.round(point.x)},${Math.round(point.y)}`)
+      .join(" "));
 }
 
 export function computeIndoorRoutePolylines(stops, collectedIds, notFoundIds, userAnchor = null) {
@@ -475,28 +456,6 @@ export function computeIndoorRoutePolylines(stops, collectedIds, notFoundIds, us
   const pendingStops = stops.filter(
     (s) => !collectedIds.has(s.productId) && !notFoundIds.has(s.productId),
   );
-
-  const collectedSegments = [];
-  if (collectedStops.length > 0) {
-    const fromEntrance = dijkstraShortestPath(
-      graph,
-      "entrance",
-      collectedStops[0].stopNodeKey,
-    );
-    if (fromEntrance.points.length > 1) {
-      collectedSegments.push(fromEntrance.points);
-    }
-    for (let i = 1; i < collectedStops.length; i += 1) {
-      const seg = dijkstraShortestPath(
-        graph,
-        collectedStops[i - 1].stopNodeKey,
-        collectedStops[i].stopNodeKey,
-      );
-      if (seg.points.length > 1) {
-        collectedSegments.push(seg.points);
-      }
-    }
-  }
 
   const upcomingSegments = [];
   if (pendingStops.length > 0) {
@@ -514,21 +473,10 @@ export function computeIndoorRoutePolylines(stops, collectedIds, notFoundIds, us
     if (firstSeg.points.length > 1) {
       upcomingSegments.push(firstSeg.points);
     }
-
-    for (let i = 1; i < pendingStops.length; i += 1) {
-      const seg = dijkstraShortestPath(
-        graph,
-        pendingStops[i - 1].stopNodeKey,
-        pendingStops[i].stopNodeKey,
-      );
-      if (seg.points.length > 1) {
-        upcomingSegments.push(seg.points);
-      }
-    }
   }
 
   return {
-    collectedPointsAttr: flattenSegmentsToPointsAttr(collectedSegments),
+    collectedPointsAttr: [],
     upcomingPointsAttr: flattenSegmentsToPointsAttr(upcomingSegments),
   };
 }

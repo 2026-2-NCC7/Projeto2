@@ -72,6 +72,8 @@ export function buildDemoData(period, storeId, now = new Date()) {
     units: sum('units'), revenue: sum('revenue'), averageMinutes: sum('completed') ? minutes / sum('completed') : null,
     searches: products.reduce((total, product) => total + product.searches, 0),
     searchesWithoutResult: products.reduce((total, product) => total + product.missed, 0),
+    recommendations: { impressions: sum('sessions') * 2, additions: Math.round(sum('sessions') * 0.64), conversionRate: 32 },
+    promotions: { impressions: sum('sessions'), additions: Math.round(sum('sessions') * 0.18), dismissals: Math.round(sum('sessions') * 0.52), conversionRate: 18 },
     periodLabel: `${shortDate(timeline[0].date)} a ${shortDate(timeline.at(-1).date)}`,
   };
 }
@@ -85,6 +87,8 @@ export function adaptLiveData(data) {
   }
   return {
     ...data, source: 'live', salesAvailable: false, products,
+    recommendations: data.recommendations || { impressions: 0, additions: 0, conversionRate: 0 },
+    promotions: data.promotions || { impressions: 0, additions: 0, dismissals: 0, conversionRate: 0 },
     corridors: (data.heatmap || []).map((row) => ({ ...row, units: null, revenue: null })),
     timeline: (data.timeline || []).map((row) => ({ ...row, calculated: row.calculated ?? 0 })),
     hourly: null, averageMinutes: null, units: null, revenue: null,
