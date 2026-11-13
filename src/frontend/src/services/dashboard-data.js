@@ -18,6 +18,12 @@ const catalog = [
   ['Azeite extravirgem 500 ml', 'Mercearia', 'Corredor 5', 32.9],
   ['Suco de uva 1 L', 'Bebidas', 'Corredor 5', 12.49],
 ];
+const demoRecommendationItems = [
+  ['Biscoito água e sal 200 g', 'Corredor 1'], ['Lentilha 500 g', 'Corredor 2'],
+  ['Desinfetante lavanda 1 L', 'Corredor 3'], ['Requeijão cremoso 200 g', 'Corredor 4'],
+  ['Batata palito congelada 400 g', 'Corredor 5'], ['Refrigerante guaraná 2 L', 'Corredor 6'],
+  ['Morango 250 g', 'Corredor 7'],
+];
 
 export const number = (value) => new Intl.NumberFormat('pt-BR').format(value || 0);
 export const currency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
@@ -65,6 +71,17 @@ export function buildDemoData(period, storeId, now = new Date()) {
     corridor.units += product.units; corridor.revenue += product.revenue;
   }
   const sum = (key) => timeline.reduce((total, day) => total + day[key], 0);
+  const recommendationProducts = demoRecommendationItems.map(([name, aisle], index) => {
+    const impressions = Math.round(sum('sessions') * 0.3 * (0.15 + index * 0.012));
+    const additions = Math.round(impressions * (0.22 + (index % 3) * 0.05));
+    const collected = Math.round(additions * (0.48 + (index % 3) * 0.06));
+    const estimatedRevenue = Math.round(collected * (8.5 + index * 2.75) * 100) / 100;
+    return { productName: name, aisle, impressions, additions, collected, estimatedRevenue };
+  });
+  const recommendationImpressions = recommendationProducts.reduce((total, item) => total + item.impressions, 0);
+  const recommendationAdds = recommendationProducts.reduce((total, item) => total + item.additions, 0);
+  const recommendationCollected = recommendationProducts.reduce((total, item) => total + item.collected, 0);
+  const notFoundItems = products.map((item) => ({ productName: item.name, aisle: item.aisle, reports: item.missed, lastReportedAt: dateKey(now) })).filter((item) => item.reports > 0).sort((a, b) => b.reports - a.reports);
   return {
     source: 'demo', salesAvailable: true, products, corridors, timeline, hourly,
     sessions: sum('sessions'), routesCalculated: sum('calculated'), completedRoutes: sum('completed'),
@@ -72,8 +89,9 @@ export function buildDemoData(period, storeId, now = new Date()) {
     units: sum('units'), revenue: sum('revenue'), averageMinutes: sum('completed') ? minutes / sum('completed') : null,
     searches: products.reduce((total, product) => total + product.searches, 0),
     searchesWithoutResult: products.reduce((total, product) => total + product.missed, 0),
-    recommendations: { impressions: sum('sessions') * 2, additions: Math.round(sum('sessions') * 0.64), conversionRate: 32 },
-    promotions: { impressions: sum('sessions'), additions: Math.round(sum('sessions') * 0.18), dismissals: Math.round(sum('sessions') * 0.52), conversionRate: 18 },
+    recommendations: { impressions: recommendationImpressions, additions: recommendationAdds, collected: recommendationCollected, estimatedRevenue: recommendationProducts.reduce((total, item) => total + item.estimatedRevenue, 0), conversionRate: recommendationImpressions ? Math.round(recommendationCollected / recommendationImpressions * 100) : 0, products: recommendationProducts },
+    promotions: { impressions: sum('sessions'), additions: Math.round(sum('sessions') * 0.18), collected: Math.round(sum('sessions') * 0.11), estimatedRevenue: Math.round(sum('sessions') * 1.35 * 100) / 100, dismissals: Math.round(sum('sessions') * 0.52), conversionRate: 11 },
+    notFoundItems,
     periodLabel: `${shortDate(timeline[0].date)} a ${shortDate(timeline.at(-1).date)}`,
   };
 }
@@ -89,6 +107,7 @@ export function adaptLiveData(data) {
     ...data, source: 'live', salesAvailable: false, products,
     recommendations: data.recommendations || { impressions: 0, additions: 0, conversionRate: 0 },
     promotions: data.promotions || { impressions: 0, additions: 0, dismissals: 0, conversionRate: 0 },
+    notFoundItems: data.notFoundItems || [],
     corridors: (data.heatmap || []).map((row) => ({ ...row, units: null, revenue: null })),
     timeline: (data.timeline || []).map((row) => ({ ...row, calculated: row.calculated ?? 0 })),
     hourly: null, averageMinutes: null, units: null, revenue: null,

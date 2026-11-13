@@ -15,6 +15,8 @@
 .analytics-sidebar nav button:hover { background:#f6f7f3; }
 .analytics-sidebar nav button.active { background:#fff0e5; color:#c55d1a; }
 .analytics-sidebar nav button>i { margin-left:auto; width:5px; height:5px; border-radius:50%; background:#e8752b; }
+.analytics-nav-count { margin-left:auto; min-width:20px; padding:2px 5px; border-radius:20px; background:#fff0e5; color:#bd4b23; text-align:center; font-size:9px; line-height:14px; }
+.analytics-sidebar nav button.active .analytics-nav-count { background:#fff; }
 .sidebar-footer { margin-top:auto; }
 .sidebar-store { display:flex; align-items:center; gap:10px; padding:16px 0; border-top:1px solid var(--a-line); }
 .sidebar-store>span { flex-shrink:0; display:grid; place-items:center; background:#edf2e9; color:#526c53; width:36px; height:36px; border-radius:10px; font-weight:700; }
@@ -79,6 +81,13 @@
 .report-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }.report-cards article { display:flex; flex-direction:column; padding:24px; border:1px solid #e6eadd; border-radius:10px; }.report-icon { display:grid; place-items:center; width:40px; height:40px; background:#f5efe0; color:#bd8a46; border-radius:9px; font-size:22px; }.report-cards h3 { font-size:14px; margin:18px 0 9px; }.report-cards p { margin:0 0 18px; color:#8e9b7f; font-size:12px; line-height:1.7; }.report-cards small { font-size:10px; color:#a0ac91; margin-top:auto; }.report-cards .analytics-button { margin-top:20px; }
 .metric-definitions { margin:0; }.metric-definitions>div { display:grid; grid-template-columns:180px 1fr; gap:25px; padding:17px 0; border-bottom:1px solid #edf0e6; font-size:12px; line-height:1.7; }.metric-definitions dt { font-weight:600; }.metric-definitions dd { margin:0; color:#8b997a; }
 .analytics-empty { display:flex; min-height:180px; flex-direction:column; align-items:center; justify-content:center; padding:25px; color:#8b977e; text-align:center; font-size:12px; line-height:1.7; }.analytics-empty>span { font-size:30px; color:#bac4ad; }.analytics-error { padding:20px; background:#fff1e9; border-radius:10px; font-size:13px; color:#a96539; }.analytics-notice { padding:13px 16px; border-radius:8px; background:#eaf4e4; color:#5a7c44; font-size:12px; }
+.recommendation-revenue-chart { display:grid; gap:14px; padding:8px 0; }
+.recommendation-revenue-chart>div { display:grid; grid-template-columns:minmax(130px,1fr) minmax(100px,1.5fr) auto; align-items:center; gap:12px; font-size:11px; }
+.recommendation-revenue-chart>div>span { font-weight:600; }
+.recommendation-revenue-chart small { display:block; margin-top:4px; color:var(--a-muted); font-size:9px; font-weight:400; }
+.recommendation-revenue-chart i { height:9px; overflow:hidden; border-radius:8px; background:#f2eee8; }
+.recommendation-revenue-chart i b { display:block; height:100%; border-radius:8px; background:linear-gradient(90deg,#f3a66a,#e8752b); }
+.recommendation-revenue-chart strong { color:#9b511d; font-size:10px; white-space:nowrap; }
 .analytics-footer { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding-top:22px; color:#a1ab96; font-size:10px; }.analytics-footer b { color:#81916e; font-family:'Space Grotesk',sans-serif; font-size:14px; }.analytics-footer small { margin-left:auto; font-size:9px; }
 @media(min-width:1400px) { .analytics-content { padding:40px 48px 24px; }.analytics-heading h1 { font-size:36px; } }
 @media(max-width:1150px) { .analytics-app { grid-template-columns:205px minmax(0,1fr); }.analytics-content { padding:25px; }.analytics-topbar { padding:0 25px; }.analytics-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }.category-chart { flex-direction:column; gap:10px; }.category-chart ul { width:100%; }.analytics-grid { gap:15px; }.analytics-panel { padding:18px; }.filter-date { display:none; }.report-cards { grid-template-columns:1fr; }.report-cards article { display:grid; grid-template-columns:40px 1fr auto; gap:10px 20px; align-items:center; }.report-cards h3 { margin:0; }.report-cards p,.report-cards small { grid-column:2; margin:0; }.report-cards .analytics-button { grid-column:3; grid-row:1 / 4; margin:0; } }

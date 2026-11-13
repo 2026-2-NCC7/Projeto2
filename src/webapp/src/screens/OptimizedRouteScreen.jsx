@@ -142,6 +142,25 @@ export function OptimizedRouteScreen({
 
   const collectStop = (stop, advanceCurrentStop) => {
     if (stop?.productId === undefined) return;
+    if (stop.recommendationSource === "recommendation") {
+      onTrackEngagement?.("recommendation_collected", {
+        productId: stop.productId,
+        productName: stop.name,
+        aisle: stop.aisle,
+        quantity: Number(stop.quantity || 1),
+        value: Number(stop.price || 0) * Number(stop.quantity || 1),
+        source: "nearby_recommendation",
+      });
+    } else if (stop.recommendationSource === "promotion") {
+      onTrackEngagement?.("promotion_collected", {
+        productId: stop.productId,
+        productName: stop.name,
+        aisle: stop.aisle,
+        quantity: Number(stop.quantity || 1),
+        value: Number(stop.price || 0) * Number(stop.quantity || 1),
+        source: "store_promotion_demo",
+      });
+    }
     const nextCollected = new Set(collectedIds);
     nextCollected.add(stop.productId);
     setCollectedIds(nextCollected);
@@ -190,7 +209,11 @@ export function OptimizedRouteScreen({
     const alreadyOnRoute = stops.some((stop) => stop.name?.toLowerCase() === product.name?.toLowerCase());
     if (alreadyOnRoute) return;
     const addedStop = mapStopsToIndoorGraphStops([{
-      ...product, productId: product.id, aisle: product.location?.aisle, shelf: product.location?.shelf,
+      ...product,
+      recommendationSource: product.promoId ? "promotion" : "recommendation",
+      productId: product.id,
+      aisle: product.location?.aisle,
+      shelf: product.location?.shelf,
     }])[0];
     // Preserve a rota calculada e acrescente os itens novos depois das paradas originais.
     const activeCorridor = stops[activeIndex]?.corridorIndex ?? 0;
